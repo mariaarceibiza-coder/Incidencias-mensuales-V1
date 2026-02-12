@@ -187,7 +187,7 @@ function renderPage(page) {
     const pages = {
         dashboard: `
             <div class="page-header"><div><h1 class="page-title">Dashboard</h1><p class="page-sub">Resumen de incidencias</p></div>
-            <div class="filter-bar"><select class="form-select" id="dMes" onchange="updateDash()">${mesOpts}</select><select class="form-select" id="dYear" onchange="updateDash()"><option>2026</option><option>2025</option></select></div></div>
+            <div class="filter-bar"><select class="form-select" id="dMes" onchange="updateDash()">${mesOpts}</select><select class="form-select" id="dYear" onchange="updateDash()"><option value="2026">2026</option><option value="2025">2025</option></select></div></div>
             <div class="stats"><div class="stat"><div class="stat-label">Total Comisiones</div><div class="stat-val" id="sC">0€</div></div>
             <div class="stat"><div class="stat-label">Total Dietas</div><div class="stat-val" id="sD">0€</div></div>
             <div class="stat"><div class="stat-label">Domingos</div><div class="stat-val" id="sDo">0</div></div>
@@ -196,7 +196,7 @@ function renderPage(page) {
         
         comisiones: `
             <div class="page-header"><div><h1 class="page-title">Comisiones</h1></div><button class="btn btn-p" onclick="openModal('comisionModal')">+ Nueva</button></div>
-            <div class="filter-bar"><select class="form-select" id="cFMes" onchange="renderComisiones()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="cFTienda" onchange="renderComisiones()"><option value="">Todas</option>${tiendaOpts}</select></div>
+            <div class="filter-bar"><select class="form-select" id="cFMes" onchange="renderComisiones()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="cFYear" onchange="renderComisiones()"><option value="">Todos</option><option value="2026">2026</option><option value="2025">2025</option></select><select class="form-select" id="cFTienda" onchange="renderComisiones()"><option value="">Todas</option>${tiendaOpts}</select></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Mes</th><th>Tienda</th><th>Empleado</th><th>Ventas</th><th>Objetivo</th><th>Ajustes</th><th>Comisión</th><th></th></tr></thead><tbody id="comTb"></tbody></table></div></div>`,
         
         dietas: `
@@ -245,6 +245,7 @@ function renderPage(page) {
 
 // Dashboard
 function updateDash() {
+    if(!$('dMes')||!$('dYear')) return;
     const mes=+$('dMes').value, year=+$('dYear').value;
     const cF=comisiones.filter(c=>c.mes==mes&&c.year==year);
     const dF=dietas.filter(d=>{const dt=new Date(d.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
@@ -271,9 +272,10 @@ function updateDash() {
 
 // Render tables
 function renderComisiones() {
-    const fMes=$('cFMes')?.value, fTienda=$('cFTienda')?.value;
+    const fMes=$('cFMes')?.value, fYear=$('cFYear')?.value, fTienda=$('cFTienda')?.value;
     let f=comisiones;
     if(fMes)f=f.filter(c=>c.mes==fMes);
+    if(fYear)f=f.filter(c=>c.year==fYear);
     if(fTienda)f=f.filter(c=>c.tiendaId===fTienda);
     $('comTb').innerHTML=f.length?f.map(c=>{
         const e=empleados.find(x=>x.id===c.empId), t=tiendas.find(x=>x.id===c.tiendaId);
