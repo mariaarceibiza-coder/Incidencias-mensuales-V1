@@ -325,6 +325,8 @@ function renderTiendas() {
 
 // Modals
 function openModal(type,data={}) {
+    const now=new Date();
+    if(!data.id) { if(!data.mes) data.mes=now.getMonth()+1; if(!data.year) data.year=now.getFullYear(); if(!data.fecha) data.fecha=now.toISOString().split('T')[0]; }
     const tiendaOpts=tiendas.filter(t=>t.estado==='activa').map(t=>`<option value="${t.id}"${data.tiendaId===t.id?' selected':''}>${t.nombre}</option>`).join('');
     const empOpts=empleados.filter(e=>e.estado==='activo').map(e=>`<option value="${e.id}"${data.empId===e.id?' selected':''}>${e.nombre}</option>`).join('');
     const mesOpts=MESES.slice(1).map((m,i)=>`<option value="${i+1}"${data.mes==i+1?' selected':''}>${m}</option>`).join('');
