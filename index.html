@@ -187,10 +187,11 @@ function renderPage(page) {
     const pages = {
         dashboard: `
             <div class="page-header"><div><h1 class="page-title">Dashboard</h1><p class="page-sub">Resumen de incidencias</p></div>
-            <div class="filter-bar"><select class="form-select" id="dMes" onchange="updateDash()">${mesOpts}</select><select class="form-select" id="dYear" onchange="updateDash()"><option value="2026">2026</option><option value="2025">2025</option></select></div></div>
+            <div class="filter-bar"><select class="form-select" id="dMes" onchange="updateDash()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="dYear" onchange="updateDash()"><option value="">Todos</option><option value="2026">2026</option><option value="2025">2025</option></select></div></div>
             <div class="stats"><div class="stat"><div class="stat-label">Total Comisiones</div><div class="stat-val" id="sC">0€</div></div>
             <div class="stat"><div class="stat-label">Total Dietas</div><div class="stat-val" id="sD">0€</div></div>
             <div class="stat"><div class="stat-label">Domingos</div><div class="stat-val" id="sDo">0</div></div>
+            <div class="stat"><div class="stat-label">Festivos</div><div class="stat-val" id="sF">0</div></div>
             <div class="stat"><div class="stat-label">H. Nocturnas</div><div class="stat-val" id="sN">0h</div></div></div>
             <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Domingos</th><th>Festivos</th><th>Noct.</th></tr></thead><tbody id="dashTb"></tbody></table></div></div>`,
         
@@ -246,27 +247,30 @@ function renderPage(page) {
 // Dashboard
 function updateDash() {
     if(!$('dMes')||!$('dYear')) return;
-    const mes=+$('dMes').value, year=+$('dYear').value;
-    const cF=comisiones.filter(c=>c.mes==mes&&c.year==year);
-    const dF=dietas.filter(d=>{const dt=new Date(d.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
-    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
-    const nF=nocturnidad.filter(n=>n.mes==mes&&n.year==year);
-    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
-    
+    const mesVal=$('dMes').value, yearVal=$('dYear').value;
+    const mes=mesVal?+mesVal:0, year=yearVal?+yearVal:0;
+    function matchMesYear(m,y){return(!mes||m==mes)&&(!year||y==year)}
+    const cF=comisiones.filter(c=>matchMesYear(c.mes,c.year));
+    const dF=dietas.filter(d=>{const dt=new Date(d.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
+    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
+    const nF=nocturnidad.filter(n=>matchMesYear(n.mes,n.year));
+    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
+
     $('sC').textContent=fmt(cF.reduce((s,c)=>s+(c.comision||0),0));
     $('sD').textContent=fmt(dF.reduce((s,d)=>s+(d.importe||0)+(d.incentivo||0),0));
     $('sDo').textContent=doF.length;
+    $('sF').textContent=fF.length;
     $('sN').textContent=nF.reduce((s,n)=>s+(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0),0)+'h';
-    
+
     const res={};
-    empleados.forEach(e=>{res[e.id]={emp:e.nombre,tienda:tiendas.find(t=>t.id===e.tiendaId)?.nombre||'-',c:0,d:0,doo:0,f:0,n:0}});
-    cF.forEach(c=>{if(res[c.empId])res[c.empId].c+=c.comision||0});
+    empleados.forEach(e=>{res[e.id]={emp:e.nombre,tienda:tiendas.find(t=>t.id===e.tiendaId)?.nombre||'-',c:0,cc:0,d:0,doo:0,f:0,n:0}});
+    cF.forEach(c=>{if(res[c.empId]){res[c.empId].c+=c.comision||0;res[c.empId].cc++}});
     dF.forEach(d=>{if(res[d.empId])res[d.empId].d+=(d.importe||0)+(d.incentivo||0)});
     doF.forEach(d=>{if(res[d.empId])res[d.empId].doo++});
     fF.forEach(f=>{if(res[f.empId])res[f.empId].f++});
     nF.forEach(n=>{if(res[n.empId])res[n.empId].n+=(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0)});
-    
-    const rows=Object.values(res).filter(r=>r.c||r.d||r.doo||r.f||r.n);
+
+    const rows=Object.values(res).filter(r=>r.cc||r.d||r.doo||r.f||r.n);
     $('dashTb').innerHTML=rows.length?rows.map(r=>`<tr><td><b>${r.emp}</b></td><td>${r.tienda}</td><td>${fmt(r.c)}</td><td>${fmt(r.d)}</td><td>${r.doo}</td><td>${r.f}</td><td>${r.n}h</td></tr>`).join(''):'<tr><td colspan="7" class="empty"><h3>Sin datos</h3><p>Añade empleados y registra incidencias</p></td></tr>';
 }
 
