@@ -31,13 +31,14 @@
         .main{flex:1;margin-left:260px;padding:32px}
         .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
         .page-title{font-family:var(--display);font-size:32px;font-weight:600}.page-sub{color:var(--txt2);margin-top:4px}
-        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
-        .stat{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border)}.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px}.stat-val{font-family:var(--display);font-size:28px;font-weight:600}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px}
+        .stat{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border)}.stat-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px}.stat-val{font-family:var(--display);font-size:28px;font-weight:600}.stat-sub{font-size:11px;color:var(--txt2);margin-top:4px}
         .card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);margin-bottom:24px}.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
         .card-title{font-family:var(--display);font-size:18px;font-weight:600}.card-body{padding:20px}
         table{width:100%;border-collapse:collapse}th{text-align:left;padding:10px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;background:var(--sec);border-bottom:1px solid var(--border)}
         td{padding:12px;border-bottom:1px solid var(--border);font-size:13px}tr:hover{background:var(--bg)}
         .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase}.badge-ok{background:#E8F5E9;color:var(--ok)}.badge-warn{background:#FFF8E1;color:var(--warn)}.badge-err{background:#FFEBEE;color:var(--err)}.badge-info{background:#E3F2FD;color:var(--info)}
+        .badge.click{cursor:pointer;transition:.15s}.badge.click:hover{opacity:.7}
         .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:.2s}.modal-bg.active{opacity:1;visibility:visible}
         .modal{background:var(--card);border-radius:16px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}.modal-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
         .modal-title{font-family:var(--display);font-size:22px;font-weight:600}.modal-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:24px}.modal-body{padding:20px}.modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px}
@@ -53,12 +54,12 @@
         @media(max-width:1024px){.sidebar{transform:translateX(-100%);transition:.3s}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mob-btn{display:flex!important}}
         .mob-btn{display:none;position:fixed;top:16px;left:16px;z-index:101;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:pointer}
         .local-badge{background:#E3F2FD;color:var(--info);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-left:8px}
+        .obj-table{width:100%;margin-top:12px}.obj-table td,.obj-table th{padding:6px 8px;font-size:12px}
     </style>
 </head>
 <body>
 <div class="loading" id="load"><div class="spinner"></div></div>
 
-<!-- Auth simulado para modo local -->
 <div class="auth" id="authScreen">
     <div class="auth-box">
         <div class="auth-logo">Charo Ruiz Ibiza</div>
@@ -72,7 +73,6 @@
     </div>
 </div>
 
-<!-- App -->
 <div class="app" id="app">
     <button class="mob-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
     <aside class="sidebar" id="sidebar">
@@ -88,6 +88,7 @@
                 <a class="nav-item" data-p="domingos">📅 Domingos</a>
                 <a class="nav-item" data-p="festivos">⭐ Festivos</a>
                 <a class="nav-item" data-p="nocturnidad">🌙 Nocturnidad</a>
+                <a class="nav-item" data-p="horasExtras">⏱️ Horas Extras</a>
             </div>
             <div class="nav-sec"><div class="nav-title">Config</div>
                 <a class="nav-item" data-p="empleados">👥 Empleados</a>
@@ -106,33 +107,36 @@
 <div class="toast-box" id="toasts"></div>
 
 <script>
-// Utils - definidos primero
-function $(id) { return document.getElementById(id); }
-function show(id) { const el = $(id); if(el) el.classList.remove('hidden'); }
-function hide(id) { const el = $(id); if(el) el.classList.add('hidden'); }
-function fmt(v) { return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(v||0); }
-function fmtDate(d) { return d ? new Date(d).toLocaleDateString('es-ES') : '-'; }
-function toast(msg,type='') { const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;$('toasts').appendChild(t);setTimeout(()=>t.remove(),4000); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+function $(id){return document.getElementById(id)}
+function show(id){const el=$(id);if(el)el.classList.remove('hidden')}
+function hide(id){const el=$(id);if(el)el.classList.add('hidden')}
+function fmt(v){return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(v||0)}
+function fmtDate(d){return d?new Date(d).toLocaleDateString('es-ES'):'-'}
+function toast(msg,type=''){const t=document.createElement('div');t.className=`toast ${type}`;t.textContent=msg;$('toasts').appendChild(t);setTimeout(()=>t.remove(),4000)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2)}
 
-// Constants
-const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIETAS = {nacional_con:53.34,nacional_sin:26.67,inter_con:91.35,inter_sin:48.08};
-const DIETA_LABELS = {nacional_con:'Nacional c/pernocta',nacional_sin:'Nacional s/pernocta',inter_con:'Internacional c/pernocta',inter_sin:'Internacional s/pernocta'};
+const MESES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIETAS={nacional_con:53.34,nacional_sin:26.67,inter_con:91.35,inter_sin:48.08};
+const DIETA_LABELS={nacional_con:'Nacional c/pernocta',nacional_sin:'Nacional s/pernocta',inter_con:'Internacional c/pernocta',inter_sin:'Internacional s/pernocta'};
+const DIETA_ESTADOS=['pte_pago','pagado_pte_incentivo','pagado'];
+const DIETA_ESTADO_LABELS={pte_pago:'Pte. de pago',pagado_pte_incentivo:'Pagado pte. incentivo',pagado:'Pagado'};
+const DIETA_ESTADO_BADGE={pte_pago:'badge-err',pagado_pte_incentivo:'badge-warn',pagado:'badge-ok'};
+const HEXTRA_ESTADOS=['pendiente','pagado','disfrutado'];
+const HEXTRA_BADGE={pendiente:'badge-warn',pagado:'badge-ok',disfrutado:'badge-info'};
 
-// State - localStorage
-let tiendas = JSON.parse(localStorage.getItem('cr_tiendas') || '[]');
-let empleados = JSON.parse(localStorage.getItem('cr_empleados') || '[]');
-let comisiones = JSON.parse(localStorage.getItem('cr_comisiones') || '[]');
-let dietas = JSON.parse(localStorage.getItem('cr_dietas') || '[]');
-let domingos = JSON.parse(localStorage.getItem('cr_domingos') || '[]');
-let festivos = JSON.parse(localStorage.getItem('cr_festivos') || '[]');
-let nocturnidad = JSON.parse(localStorage.getItem('cr_nocturnidad') || '[]');
-let currentUser = localStorage.getItem('cr_user') || '';
+let tiendas=JSON.parse(localStorage.getItem('cr_tiendas')||'[]');
+let empleados=JSON.parse(localStorage.getItem('cr_empleados')||'[]');
+let comisiones=JSON.parse(localStorage.getItem('cr_comisiones')||'[]');
+let dietas=JSON.parse(localStorage.getItem('cr_dietas')||'[]');
+let domingos=JSON.parse(localStorage.getItem('cr_domingos')||'[]');
+let festivos=JSON.parse(localStorage.getItem('cr_festivos')||'[]');
+let nocturnidad=JSON.parse(localStorage.getItem('cr_nocturnidad')||'[]');
+let objetivos=JSON.parse(localStorage.getItem('cr_objetivos')||'[]');
+let horasExtras=JSON.parse(localStorage.getItem('cr_horasExtras')||'[]');
+let currentUser=localStorage.getItem('cr_user')||'';
 
-// Init default tiendas
-if(!tiendas.length) {
-    tiendas = [
+if(!tiendas.length){
+    tiendas=[
         {id:uid(),nombre:'Ibiza',ubicacion:'Ibiza',obj1:20000,obj2:26000,estado:'activa'},
         {id:uid(),nombre:'Lagasca',ubicacion:'Madrid',obj1:15000,obj2:19500,estado:'activa'},
         {id:uid(),nombre:'Banús',ubicacion:'Marbella',obj1:18000,obj2:23400,estado:'activa'}
@@ -140,348 +144,449 @@ if(!tiendas.length) {
     save('tiendas');
 }
 
-function save(key) {
-    const data = {tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad};
-    localStorage.setItem('cr_'+key, JSON.stringify(data[key]));
+function save(key){
+    const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras};
+    localStorage.setItem('cr_'+key,JSON.stringify(data[key]));
 }
 
-// Auth local
-function loginLocal() {
-    const name = $('localUser').value.trim() || 'Usuario';
-    currentUser = name;
-    localStorage.setItem('cr_user', name);
+function getObjetivo(tiendaId,mes,year){
+    const o=objetivos.find(x=>x.tiendaId===tiendaId&&x.mes==mes&&x.year==year);
+    if(o) return {obj1:o.obj1,obj2:o.obj2};
+    const t=tiendas.find(x=>x.id===tiendaId);
+    return t?{obj1:t.obj1,obj2:t.obj2}:{obj1:0,obj2:0};
+}
+
+function isInternacional(tipo){return tipo==='inter_con'||tipo==='inter_sin'}
+
+function loginLocal(){
+    const name=$('localUser').value.trim()||'Usuario';
+    currentUser=name;
+    localStorage.setItem('cr_user',name);
     showApp();
 }
-function logoutLocal() {
-    currentUser = '';
-    localStorage.removeItem('cr_user');
-    location.reload();
+function logoutLocal(){currentUser='';localStorage.removeItem('cr_user');location.reload()}
+function showApp(){
+    hide('authScreen');$('app').classList.add('active');
+    $('uName').textContent=currentUser;$('avatar').textContent=currentUser[0].toUpperCase();
+    renderPage('dashboard');hide('load');
 }
-function showApp() {
-    hide('authScreen');
-    $('app').classList.add('active');
-    $('uName').textContent = currentUser;
-    $('avatar').textContent = currentUser[0].toUpperCase();
-    renderPage('dashboard');
-    hide('load');
-}
+document.addEventListener('DOMContentLoaded',()=>{if(currentUser)showApp();else hide('load')});
 
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-    if(currentUser) {
-        showApp();
-    } else {
-        hide('load');
-    }
-});
-
-// Render page
-function renderPage(page) {
+// === RENDER PAGE ===
+function renderPage(page){
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.p===page));
-    const m = $('main');
-    const now = new Date();
-    const mesOpts = MESES.slice(1).map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
-    const tiendaOpts = tiendas.filter(t=>t.estado==='activa').map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
-    const empOpts = empleados.filter(e=>e.estado==='activo').map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
-    
-    const pages = {
-        dashboard: `
+    const m=$('main'),now=new Date();
+    const mesOpts=MESES.slice(1).map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+    const tiendaOpts=tiendas.filter(t=>t.estado==='activa').map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+    const empOpts=empleados.filter(e=>e.estado==='activo').map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+    const empAllOpts=empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+    const yearOpts='<option value="2026">2026</option><option value="2025">2025</option>';
+
+    const pages={
+        dashboard:`
             <div class="page-header"><div><h1 class="page-title">Dashboard</h1><p class="page-sub">Resumen de incidencias</p></div>
-            <div class="filter-bar"><select class="form-select" id="dMes" onchange="updateDash()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="dYear" onchange="updateDash()"><option value="">Todos</option><option value="2026">2026</option><option value="2025">2025</option></select></div></div>
-            <div class="stats"><div class="stat"><div class="stat-label">Total Comisiones</div><div class="stat-val" id="sC">0€</div></div>
-            <div class="stat"><div class="stat-label">Total Dietas</div><div class="stat-val" id="sD">0€</div></div>
-            <div class="stat"><div class="stat-label">Domingos</div><div class="stat-val" id="sDo">0</div></div>
-            <div class="stat"><div class="stat-label">Festivos</div><div class="stat-val" id="sF">0</div></div>
-            <div class="stat"><div class="stat-label">H. Nocturnas</div><div class="stat-val" id="sN">0h</div></div></div>
-            <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Domingos</th><th>Festivos</th><th>Noct.</th></tr></thead><tbody id="dashTb"></tbody></table></div></div>`,
-        
-        comisiones: `
+            <div class="filter-bar">
+                <select class="form-select" id="dEmp" onchange="updateDash()"><option value="">Todos los empleados</option>${empAllOpts}</select>
+                <select class="form-select" id="dMes" onchange="updateDash()"><option value="">Todos</option>${mesOpts}</select>
+                <select class="form-select" id="dYear" onchange="updateDash()"><option value="">Todos</option>${yearOpts}</select>
+            </div></div>
+            <div class="stats">
+                <div class="stat"><div class="stat-label">Comisiones Mes</div><div class="stat-val" id="sC">0€</div></div>
+                <div class="stat"><div class="stat-label">Comisión Anual</div><div class="stat-val" id="sCA">0€</div><div class="stat-sub" id="sCAdet"></div></div>
+                <div class="stat"><div class="stat-label">Total Dietas</div><div class="stat-val" id="sD">0€</div></div>
+                <div class="stat"><div class="stat-label">Domingos</div><div class="stat-val" id="sDo">0</div></div>
+                <div class="stat"><div class="stat-label">Festivos</div><div class="stat-val" id="sF">0</div></div>
+                <div class="stat"><div class="stat-label">H. Nocturnas</div><div class="stat-val" id="sN">0h</div></div>
+                <div class="stat"><div class="stat-label">H. Extras</div><div class="stat-val" id="sHE">0h</div></div>
+            </div>
+            <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Dom.</th><th>Fest.</th><th>Noct.</th><th>H.Extra</th></tr></thead><tbody id="dashTb"></tbody></table></div></div>`,
+
+        comisiones:`
             <div class="page-header"><div><h1 class="page-title">Comisiones</h1></div><button class="btn btn-p" onclick="openModal('comisionModal')">+ Nueva</button></div>
-            <div class="filter-bar"><select class="form-select" id="cFMes" onchange="renderComisiones()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="cFYear" onchange="renderComisiones()"><option value="">Todos</option><option value="2026">2026</option><option value="2025">2025</option></select><select class="form-select" id="cFTienda" onchange="renderComisiones()"><option value="">Todas</option>${tiendaOpts}</select></div>
+            <div class="filter-bar"><select class="form-select" id="cFMes" onchange="renderComisiones()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="cFYear" onchange="renderComisiones()"><option value="">Todos</option>${yearOpts}</select><select class="form-select" id="cFTienda" onchange="renderComisiones()"><option value="">Todas</option>${tiendaOpts}</select></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Mes</th><th>Tienda</th><th>Empleado</th><th>Ventas</th><th>Objetivo</th><th>Ajustes</th><th>Comisión</th><th></th></tr></thead><tbody id="comTb"></tbody></table></div></div>`,
-        
-        dietas: `
+
+        dietas:`
             <div class="page-header"><div><h1 class="page-title">Dietas</h1></div><button class="btn btn-p" onclick="openModal('dietaModal')">+ Nueva</button></div>
-            <div class="filter-bar"><select class="form-select" id="dietFMes" onchange="renderDietas()"><option value="">Todos</option>${mesOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Tipo</th><th>Días</th><th>Dieta</th><th>Incentivo</th><th>Estado</th><th></th></tr></thead><tbody id="dietTb"></tbody></table></div></div>`,
-        
-        domingos: `
+            <div class="filter-bar"><select class="form-select" id="dietFMes" onchange="renderDietas()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="dietFEstado" onchange="renderDietas()"><option value="">Todos estados</option><option value="pte_pago">Pte. de pago</option><option value="pagado_pte_incentivo">Pagado pte. incentivo</option><option value="pagado">Pagado</option></select></div>
+            <div class="card"><div class="card-body"><table><thead><tr><th>F. Viaje</th><th>F. Pago</th><th>Empleado</th><th>Tipo</th><th>Días</th><th>Dieta</th><th>Incentivo</th><th>Estado</th><th></th></tr></thead><tbody id="dietTb"></tbody></table></div></div>`,
+
+        domingos:`
             <div class="page-header"><div><h1 class="page-title">Domingos</h1></div><button class="btn btn-p" onclick="openModal('domModal')">+ Nuevo</button></div>
             <div class="filter-bar"><select class="form-select" id="domFMes" onchange="renderDomingos()"><option value="">Todos</option>${mesOpts}</select></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Empleado</th><th>Autorizado</th><th></th></tr></thead><tbody id="domTb"></tbody></table></div></div>`,
-        
-        festivos: `
+
+        festivos:`
             <div class="page-header"><div><h1 class="page-title">Festivos</h1></div><button class="btn btn-p" onclick="openModal('festModal')">+ Nuevo</button></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Festivo</th><th>Tienda</th><th>Empleado</th><th></th></tr></thead><tbody id="festTb"></tbody></table></div></div>`,
-        
-        nocturnidad: `
+
+        nocturnidad:`
             <div class="page-header"><div><h1 class="page-title">Nocturnidad</h1></div><button class="btn btn-p" onclick="openModal('noctModal')">+ Nuevo</button></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Mes</th><th>Empleado</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>Total</th><th></th></tr></thead><tbody id="noctTb"></tbody></table></div></div>`,
-        
-        empleados: `
+
+        horasExtras:`
+            <div class="page-header"><div><h1 class="page-title">Horas Extras</h1></div><button class="btn btn-p" onclick="openModal('hExtraModal')">+ Nueva</button></div>
+            <div class="filter-bar"><select class="form-select" id="heFEst" onchange="renderHorasExtras()"><option value="">Todos estados</option><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="disfrutado">Disfrutado</option></select></div>
+            <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horas</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody id="heTb"></tbody></table></div></div>`,
+
+        empleados:`
             <div class="page-header"><div><h1 class="page-title">Empleados</h1></div><button class="btn btn-p" onclick="openModal('empModal')">+ Nuevo</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Obj1</th><th>%Obj2</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div>`,
-        
-        tiendas: `
+            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Base</th><th>%Obj1</th><th>%Obj2</th><th>%Anual</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div>`,
+
+        tiendas:`
             <div class="page-header"><div><h1 class="page-title">Tiendas</h1></div><button class="btn btn-p" onclick="openModal('tiendaModal')">+ Nueva</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Obj.1</th><th>Obj.2</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div>`,
-        
-        exportar: `
+            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Obj.1 base</th><th>Obj.2 base</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div>`,
+
+        exportar:`
             <div class="page-header"><div><h1 class="page-title">Exportar</h1><p class="page-sub">Genera Excel para gestoría</p></div></div>
-            <div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="expMes">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="expYear"><option>2026</option><option>2025</option></select></div></div><button class="btn btn-p" onclick="exportExcel()">📥 Descargar Excel</button></div></div>`
+            <div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="expMes"><option value="">Todos</option>${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="expYear">${yearOpts}</select></div></div><button class="btn btn-p" onclick="exportExcel()">📥 Descargar Excel</button></div></div>`
     };
-    
-    m.innerHTML = pages[page] || '<p>Página no encontrada</p>';
-    
-    if(page==='dashboard') { $('dMes').value=now.getMonth()+1; updateDash(); }
-    if(page==='comisiones') renderComisiones();
-    if(page==='dietas') renderDietas();
-    if(page==='domingos') renderDomingos();
-    if(page==='festivos') renderFestivos();
-    if(page==='nocturnidad') renderNocturnidad();
-    if(page==='empleados') renderEmpleados();
-    if(page==='tiendas') renderTiendas();
-    if(page==='exportar') $('expMes').value=now.getMonth()+1;
+
+    m.innerHTML=pages[page]||'<p>Página no encontrada</p>';
+    if(page==='dashboard'){$('dMes').value=now.getMonth()+1;$('dYear').value=now.getFullYear();updateDash()}
+    if(page==='comisiones')renderComisiones();
+    if(page==='dietas')renderDietas();
+    if(page==='domingos')renderDomingos();
+    if(page==='festivos')renderFestivos();
+    if(page==='nocturnidad')renderNocturnidad();
+    if(page==='horasExtras')renderHorasExtras();
+    if(page==='empleados')renderEmpleados();
+    if(page==='tiendas')renderTiendas();
+    if(page==='exportar'){$('expMes').value=now.getMonth()+1;$('expYear').value=now.getFullYear()}
 }
 
-// Dashboard
-function updateDash() {
-    if(!$('dMes')||!$('dYear')) return;
-    const mesVal=$('dMes').value, yearVal=$('dYear').value;
-    const mes=mesVal?+mesVal:0, year=yearVal?+yearVal:0;
-    function matchMesYear(m,y){return(!mes||m==mes)&&(!year||y==year)}
-    const cF=comisiones.filter(c=>matchMesYear(c.mes,c.year));
-    const dF=dietas.filter(d=>{const dt=new Date(d.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
-    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
-    const nF=nocturnidad.filter(n=>matchMesYear(n.mes,n.year));
-    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return matchMesYear(dt.getMonth()+1,dt.getFullYear())});
+// === DASHBOARD ===
+function updateDash(){
+    if(!$('dMes')||!$('dYear'))return;
+    const mesVal=$('dMes').value,yearVal=$('dYear').value,empVal=$('dEmp')?.value||'';
+    const mes=mesVal?+mesVal:0,year=yearVal?+yearVal:0;
+    function mm(m,y){return(!mes||m==mes)&&(!year||y==year)}
+    function fe(empId){return !empVal||empId===empVal}
+
+    const cF=comisiones.filter(c=>mm(c.mes,c.year)&&fe(c.empId));
+    const dF=dietas.filter(d=>{const dt=new Date(d.fechaViaje||d.fecha);return mm(dt.getMonth()+1,dt.getFullYear())&&fe(d.empId)});
+    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return mm(dt.getMonth()+1,dt.getFullYear())&&fe(d.empId)});
+    const nF=nocturnidad.filter(n=>mm(n.mes,n.year)&&fe(n.empId));
+    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return mm(dt.getMonth()+1,dt.getFullYear())&&fe(f.empId)});
+    const hF=horasExtras.filter(h=>{const dt=new Date(h.fecha);return mm(dt.getMonth()+1,dt.getFullYear())&&fe(h.empId)});
 
     $('sC').textContent=fmt(cF.reduce((s,c)=>s+(c.comision||0),0));
     $('sD').textContent=fmt(dF.reduce((s,d)=>s+(d.importe||0)+(d.incentivo||0),0));
     $('sDo').textContent=doF.length;
     $('sF').textContent=fF.length;
     $('sN').textContent=nF.reduce((s,n)=>s+(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0),0)+'h';
+    $('sHE').textContent=hF.reduce((s,h)=>s+(h.horas||0),0)+'h';
+
+    // Comision anual
+    const yForAnual=year||new Date().getFullYear();
+    const cAnual=comisiones.filter(c=>c.year==yForAnual&&fe(c.empId));
+    const ventasAnual=cAnual.reduce((s,c)=>s+(c.ventas||0)+(c.ajustes||0),0);
+    let comAnual=0;
+    if(empVal){
+        const emp=empleados.find(e=>e.id===empVal);
+        comAnual=emp?ventasAnual*((emp.pctAnual||0)/100):0;
+    } else {
+        empleados.forEach(e=>{
+            const vc=cAnual.filter(c=>c.empId===e.id).reduce((s,c)=>s+(c.ventas||0)+(c.ajustes||0),0);
+            comAnual+=vc*((e.pctAnual||0)/100);
+        });
+    }
+    $('sCA').textContent=fmt(comAnual);
+    $('sCAdet').textContent=`Ventas ${yForAnual}: ${fmt(ventasAnual)}`;
 
     const res={};
-    empleados.forEach(e=>{res[e.id]={emp:e.nombre,tienda:tiendas.find(t=>t.id===e.tiendaId)?.nombre||'-',c:0,cc:0,d:0,doo:0,f:0,n:0}});
+    const emps=empVal?empleados.filter(e=>e.id===empVal):empleados;
+    emps.forEach(e=>{res[e.id]={emp:e.nombre,tienda:tiendas.find(t=>t.id===e.tiendaId)?.nombre||'-',c:0,cc:0,d:0,doo:0,f:0,n:0,he:0}});
     cF.forEach(c=>{if(res[c.empId]){res[c.empId].c+=c.comision||0;res[c.empId].cc++}});
     dF.forEach(d=>{if(res[d.empId])res[d.empId].d+=(d.importe||0)+(d.incentivo||0)});
     doF.forEach(d=>{if(res[d.empId])res[d.empId].doo++});
     fF.forEach(f=>{if(res[f.empId])res[f.empId].f++});
     nF.forEach(n=>{if(res[n.empId])res[n.empId].n+=(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0)});
+    hF.forEach(h=>{if(res[h.empId])res[h.empId].he+=(h.horas||0)});
 
-    const rows=Object.values(res).filter(r=>r.cc||r.d||r.doo||r.f||r.n);
-    $('dashTb').innerHTML=rows.length?rows.map(r=>`<tr><td><b>${r.emp}</b></td><td>${r.tienda}</td><td>${fmt(r.c)}</td><td>${fmt(r.d)}</td><td>${r.doo}</td><td>${r.f}</td><td>${r.n}h</td></tr>`).join(''):'<tr><td colspan="7" class="empty"><h3>Sin datos</h3><p>Añade empleados y registra incidencias</p></td></tr>';
+    const rows=Object.values(res).filter(r=>r.cc||r.d||r.doo||r.f||r.n||r.he);
+    $('dashTb').innerHTML=rows.length?rows.map(r=>`<tr><td><b>${r.emp}</b></td><td>${r.tienda}</td><td>${fmt(r.c)}</td><td>${fmt(r.d)}</td><td>${r.doo}</td><td>${r.f}</td><td>${r.n}h</td><td>${r.he}h</td></tr>`).join(''):'<tr><td colspan="8" class="empty"><h3>Sin datos</h3><p>Añade empleados y registra incidencias</p></td></tr>';
 }
 
-// Render tables
-function renderComisiones() {
-    const fMes=$('cFMes')?.value, fYear=$('cFYear')?.value, fTienda=$('cFTienda')?.value;
+// === RENDER TABLES ===
+function renderComisiones(){
+    const fMes=$('cFMes')?.value,fYear=$('cFYear')?.value,fTienda=$('cFTienda')?.value;
     let f=comisiones;
     if(fMes)f=f.filter(c=>c.mes==fMes);
     if(fYear)f=f.filter(c=>c.year==fYear);
     if(fTienda)f=f.filter(c=>c.tiendaId===fTienda);
     $('comTb').innerHTML=f.length?f.map(c=>{
-        const e=empleados.find(x=>x.id===c.empId), t=tiendas.find(x=>x.id===c.tiendaId);
-        return `<tr><td>${MESES[c.mes]} ${c.year}</td><td>${t?.nombre||'-'}</td><td><b>${e?.nombre||'-'}</b></td><td>${fmt(c.ventas)}</td><td><span class="badge ${c.obj==2?'badge-ok':c.obj==1?'badge-warn':'badge-info'}">Obj ${c.obj||0}</span></td><td>${c.ajustes?fmt(c.ajustes):'-'}</td><td><b style="color:var(--ok)">${fmt(c.comision)}</b></td><td><div class="actions"><button class="act-btn" onclick="editCom('${c.id}')">✏️</button><button class="act-btn del" onclick="delCom('${c.id}')">🗑️</button></div></td></tr>`;
+        const e=empleados.find(x=>x.id===c.empId),t=tiendas.find(x=>x.id===c.tiendaId);
+        return `<tr><td>${MESES[c.mes]} ${c.year}</td><td>${t?.nombre||'-'}</td><td><b>${e?.nombre||'-'}</b></td><td>${fmt(c.ventas)}</td><td><span class="badge ${c.obj==2?'badge-ok':c.obj==1?'badge-warn':'badge-info'}">Obj ${c.obj||'Base'}</span></td><td>${c.ajustes?fmt(c.ajustes):'-'}</td><td><b style="color:var(--ok)">${fmt(c.comision)}</b></td><td><div class="actions"><button class="act-btn" onclick="editCom('${c.id}')">✏️</button><button class="act-btn del" onclick="delCom('${c.id}')">🗑️</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="8" class="empty"><h3>Sin registros</h3></td></tr>';
 }
-function renderDietas() {
-    const fMes=$('dietFMes')?.value;
+
+function renderDietas(){
+    const fMes=$('dietFMes')?.value,fEst=$('dietFEstado')?.value;
     let f=dietas;
-    if(fMes)f=f.filter(d=>new Date(d.fecha).getMonth()+1==fMes);
+    if(fMes)f=f.filter(d=>new Date(d.fechaViaje||d.fecha).getMonth()+1==fMes);
+    if(fEst)f=f.filter(d=>d.estado===fEst);
     $('dietTb').innerHTML=f.length?f.map(d=>{
         const e=empleados.find(x=>x.id===d.empId);
-        return `<tr><td>${fmtDate(d.fecha)}</td><td><b>${e?.nombre||'-'}</b></td><td>${DIETA_LABELS[d.tipo]||d.tipo}</td><td>${d.dias}</td><td>${fmt(d.importe)}</td><td>${fmt(d.incentivo)}</td><td><span class="badge ${d.estado==='pagada'?'badge-ok':'badge-warn'}">${d.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editDiet('${d.id}')">✏️</button><button class="act-btn del" onclick="delDiet('${d.id}')">🗑️</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="8" class="empty"><h3>Sin registros</h3></td></tr>';
+        return `<tr><td>${fmtDate(d.fechaViaje)}</td><td>${fmtDate(d.fecha)}</td><td><b>${e?.nombre||'-'}</b></td><td>${DIETA_LABELS[d.tipo]||d.tipo}</td><td>${d.dias}</td><td>${fmt(d.importe)}</td><td>${fmt(d.incentivo)}</td><td><span class="badge click ${DIETA_ESTADO_BADGE[d.estado]||'badge-warn'}" onclick="cycleDietaEstado('${d.id}')">${DIETA_ESTADO_LABELS[d.estado]||d.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editDiet('${d.id}')">✏️</button><button class="act-btn del" onclick="delDiet('${d.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin registros</h3></td></tr>';
 }
-function renderDomingos() {
-    const fMes=$('domFMes')?.value;
-    let f=domingos;
+
+function renderDomingos(){
+    const fMes=$('domFMes')?.value;let f=domingos;
     if(fMes)f=f.filter(d=>new Date(d.fecha).getMonth()+1==fMes);
     $('domTb').innerHTML=f.length?f.map(d=>{
-        const e=empleados.find(x=>x.id===d.empId), t=tiendas.find(x=>x.id===d.tiendaId);
+        const e=empleados.find(x=>x.id===d.empId),t=tiendas.find(x=>x.id===d.tiendaId);
         return `<tr><td>${fmtDate(d.fecha)}</td><td>${t?.nombre||'-'}</td><td><b>${e?.nombre||'-'}</b></td><td><span class="badge ${d.autorizado?'badge-ok':'badge-err'}">${d.autorizado?'Sí':'No'}</span></td><td><div class="actions"><button class="act-btn" onclick="editDom('${d.id}')">✏️</button><button class="act-btn del" onclick="delDom('${d.id}')">🗑️</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="5" class="empty"><h3>Sin registros</h3></td></tr>';
 }
-function renderFestivos() {
+
+function renderFestivos(){
     $('festTb').innerHTML=festivos.length?festivos.map(f=>{
-        const e=empleados.find(x=>x.id===f.empId), t=tiendas.find(x=>x.id===f.tiendaId);
+        const e=empleados.find(x=>x.id===f.empId),t=tiendas.find(x=>x.id===f.tiendaId);
         return `<tr><td>${fmtDate(f.fecha)}</td><td><b>${f.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e?.nombre||'-'}</td><td><div class="actions"><button class="act-btn" onclick="editFest('${f.id}')">✏️</button><button class="act-btn del" onclick="delFest('${f.id}')">🗑️</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="5" class="empty"><h3>Sin registros</h3></td></tr>';
 }
-function renderNocturnidad() {
+
+function renderNocturnidad(){
     $('noctTb').innerHTML=nocturnidad.length?nocturnidad.map(n=>{
         const e=empleados.find(x=>x.id===n.empId);
         const tot=(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0);
         return `<tr><td>${MESES[n.mes]} ${n.year}</td><td><b>${e?.nombre||'-'}</b></td><td>${n.s1||0}</td><td>${n.s2||0}</td><td>${n.s3||0}</td><td>${n.s4||0}</td><td>${n.s5||0}</td><td><b>${tot}h</b></td><td><div class="actions"><button class="act-btn" onclick="editNoct('${n.id}')">✏️</button><button class="act-btn del" onclick="delNoct('${n.id}')">🗑️</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin registros</h3></td></tr>';
 }
-function renderEmpleados() {
-    $('empTb').innerHTML=empleados.length?empleados.map(e=>{
-        const t=tiendas.find(x=>x.id===e.tiendaId);
-        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="6" class="empty"><h3>Sin empleados</h3><p>Añade empleados para registrar incidencias</p></td></tr>';
-}
-function renderTiendas() {
-    $('tiendaTb').innerHTML=tiendas.map(t=>`<tr><td><b>${t.nombre}</b></td><td>${t.ubicacion||'-'}</td><td>${fmt(t.obj1)}</td><td>${fmt(t.obj2)}</td><td><span class="badge ${t.estado==='activa'?'badge-ok':'badge-err'}">${t.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editTienda('${t.id}')">✏️</button><button class="act-btn del" onclick="delTienda('${t.id}')">🗑️</button></div></td></tr>`).join('');
+
+function renderHorasExtras(){
+    const fEst=$('heFEst')?.value;let f=horasExtras;
+    if(fEst)f=f.filter(h=>h.estado===fEst);
+    $('heTb').innerHTML=f.length?f.map(h=>{
+        const e=empleados.find(x=>x.id===h.empId);
+        return `<tr><td>${fmtDate(h.fecha)}</td><td><b>${e?.nombre||'-'}</b></td><td>${h.horas}h</td><td>${h.motivo||'-'}</td><td><span class="badge click ${HEXTRA_BADGE[h.estado]||'badge-warn'}" onclick="cycleHExtraEstado('${h.id}')">${h.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editHExtra('${h.id}')">✏️</button><button class="act-btn del" onclick="delHExtra('${h.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="6" class="empty"><h3>Sin registros</h3></td></tr>';
 }
 
-// Modals
-function openModal(type,data={}) {
+function renderEmpleados(){
+    $('empTb').innerHTML=empleados.length?empleados.map(e=>{
+        const t=tiendas.find(x=>x.id===e.tiendaId);
+        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.pctBase||0}%</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td>${e.pctAnual||0}%</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="8" class="empty"><h3>Sin empleados</h3><p>Añade empleados para registrar incidencias</p></td></tr>';
+}
+
+function renderTiendas(){
+    $('tiendaTb').innerHTML=tiendas.map(t=>{
+        const objs=objetivos.filter(o=>o.tiendaId===t.id).sort((a,b)=>b.year-a.year||b.mes-a.mes);
+        const objRows=objs.length?`<tr><td colspan="6"><table class="obj-table"><thead><tr><th>Mes</th><th>Año</th><th>Obj.1</th><th>Obj.2</th><th></th></tr></thead><tbody>${objs.map(o=>`<tr><td>${MESES[o.mes]}</td><td>${o.year}</td><td>${fmt(o.obj1)}</td><td>${fmt(o.obj2)}</td><td><button class="act-btn del" onclick="delObj('${o.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></td></tr>`:'';
+        return `<tr><td><b>${t.nombre}</b></td><td>${t.ubicacion||'-'}</td><td>${fmt(t.obj1)}</td><td>${fmt(t.obj2)}</td><td><span class="badge ${t.estado==='activa'?'badge-ok':'badge-err'}">${t.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="openModal('objModal',{tiendaId:'${t.id}'})">🎯</button><button class="act-btn" onclick="editTienda('${t.id}')">✏️</button><button class="act-btn del" onclick="delTienda('${t.id}')">🗑️</button></div></td></tr>${objRows}`;
+    }).join('');
+}
+
+// === QUICK STATE CHANGE ===
+function cycleDietaEstado(id){
+    const d=dietas.find(x=>x.id===id);if(!d)return;
+    const i=DIETA_ESTADOS.indexOf(d.estado);
+    d.estado=DIETA_ESTADOS[(i+1)%DIETA_ESTADOS.length];
+    save('dietas');renderDietas();toast('Estado actualizado','ok');
+}
+function cycleHExtraEstado(id){
+    const h=horasExtras.find(x=>x.id===id);if(!h)return;
+    const i=HEXTRA_ESTADOS.indexOf(h.estado);
+    h.estado=HEXTRA_ESTADOS[(i+1)%HEXTRA_ESTADOS.length];
+    save('horasExtras');renderHorasExtras();toast('Estado actualizado','ok');
+}
+
+// === MODALS ===
+function openModal(type,data={}){
     const now=new Date();
-    if(!data.id) { if(!data.mes) data.mes=now.getMonth()+1; if(!data.year) data.year=now.getFullYear(); if(!data.fecha) data.fecha=now.toISOString().split('T')[0]; }
+    if(!data.id){if(!data.mes)data.mes=now.getMonth()+1;if(!data.year)data.year=now.getFullYear();if(!data.fecha)data.fecha=now.toISOString().split('T')[0];if(!data.fechaViaje)data.fechaViaje=''}
     const tiendaOpts=tiendas.filter(t=>t.estado==='activa').map(t=>`<option value="${t.id}"${data.tiendaId===t.id?' selected':''}>${t.nombre}</option>`).join('');
     const empOpts=empleados.filter(e=>e.estado==='activo').map(e=>`<option value="${e.id}"${data.empId===e.id?' selected':''}>${e.nombre}</option>`).join('');
     const mesOpts=MESES.slice(1).map((m,i)=>`<option value="${i+1}"${data.mes==i+1?' selected':''}>${m}</option>`).join('');
-    
-    const modals = {
-        tiendaModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Tienda</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+    const yearOpts=`<option value="2026"${data.year==2026?' selected':''}>2026</option><option value="2025"${data.year==2025?' selected':''}>2025</option>`;
+
+    const modals={
+        tiendaModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Tienda</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveTienda(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-group"><label>Nombre</label><input class="form-input" id="mTNombre" value="${data.nombre||''}" required></div>
             <div class="form-group"><label>Ubicación</label><input class="form-input" id="mTUbi" value="${data.ubicacion||''}"></div>
-            <div class="form-row"><div class="form-group"><label>Objetivo 1 (€)</label><input type="number" class="form-input" id="mTObj1" value="${data.obj1||0}" step="0.01" required oninput="$('mTObj2').value=(this.value*1.3).toFixed(2)"></div>
-            <div class="form-group"><label>Objetivo 2 (auto +30%)</label><input type="number" class="form-input" id="mTObj2" value="${data.obj2||(data.obj1*1.3)||0}" readonly style="background:var(--sec)"></div></div>
+            <div class="form-row"><div class="form-group"><label>Objetivo 1 base (€)</label><input type="number" class="form-input" id="mTObj1" value="${data.obj1||0}" step="0.01" required></div>
+            <div class="form-group"><label>Objetivo 2 base (€)</label><input type="number" class="form-input" id="mTObj2" value="${data.obj2||0}" step="0.01" required></div></div>
             <div class="form-group"><label>Estado</label><select class="form-select" id="mTEstado"><option value="activa"${data.estado==='activa'?' selected':''}>Activa</option><option value="inactiva"${data.estado==='inactiva'?' selected':''}>Inactiva</option></select></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        empModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Empleado</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        objModal:`<div class="modal-header"><h3 class="modal-title">Objetivo Mensual</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <form onsubmit="saveObj(event,'${data.tiendaId||''}')"><div class="modal-body">
+            <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mOMes">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mOYear">${yearOpts}</select></div></div>
+            <div class="form-row"><div class="form-group"><label>Objetivo 1 (€)</label><input type="number" class="form-input" id="mOObj1" value="${data.obj1||0}" step="0.01" required></div>
+            <div class="form-group"><label>Objetivo 2 (€)</label><input type="number" class="form-input" id="mOObj2" value="${data.obj2||0}" step="0.01" required></div></div>
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
+
+        empModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Empleado</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveEmp(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-group"><label>Nombre</label><input class="form-input" id="mENombre" value="${data.nombre||''}" required></div>
             <div class="form-group"><label>Tienda</label><select class="form-select" id="mETienda" required>${tiendaOpts}</select></div>
-            <div class="form-row"><div class="form-group"><label>% Comisión Obj.1</label><input type="number" class="form-input" id="mEObj1" value="${data.obj1||0.2}" step="0.001" required></div>
-            <div class="form-group"><label>% Comisión Obj.2</label><input type="number" class="form-input" id="mEObj2" value="${data.obj2||0.25}" step="0.001" required></div></div>
+            <div class="form-row"><div class="form-group"><label>% Base (sin objetivo)</label><input type="number" class="form-input" id="mEBase" value="${data.pctBase||0}" step="0.001" required></div>
+            <div class="form-group"><label>% Comisión Obj.1</label><input type="number" class="form-input" id="mEObj1" value="${data.obj1||0.2}" step="0.001" required></div></div>
+            <div class="form-row"><div class="form-group"><label>% Comisión Obj.2</label><input type="number" class="form-input" id="mEObj2" value="${data.obj2||0.25}" step="0.001" required></div>
+            <div class="form-group"><label>% Comisión Anual</label><input type="number" class="form-input" id="mEAnual" value="${data.pctAnual||0}" step="0.001" required></div></div>
             <div class="form-group"><label>Estado</label><select class="form-select" id="mEEstado"><option value="activo"${data.estado==='activo'?' selected':''}>Activo</option><option value="baja"${data.estado==='baja'?' selected':''}>Baja</option></select></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        comisionModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Comisión</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        comisionModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Comisión</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveCom(event,'${data.id||''}')"><div class="modal-body">
-            <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mCMes" onchange="calcCom()">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mCYear"><option value="2026"${data.year==2026?' selected':''}>2026</option><option value="2025"${data.year==2025?' selected':''}>2025</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mCMes" onchange="calcCom()">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mCYear" onchange="calcCom()">${yearOpts}</select></div></div>
             <div class="form-row"><div class="form-group"><label>Tienda</label><select class="form-select" id="mCTienda" required onchange="calcCom()">${tiendaOpts}</select></div><div class="form-group"><label>Empleado</label><select class="form-select" id="mCEmp" required onchange="calcCom()">${empOpts}</select></div></div>
             <div class="form-row"><div class="form-group"><label>Ventas Tienda (€)</label><input type="number" class="form-input" id="mCVentas" value="${data.ventas||0}" step="0.01" required oninput="calcCom()"></div><div class="form-group"><label>Ajustes (€)</label><input type="number" class="form-input" id="mCAjustes" value="${data.ajustes||0}" step="0.01" oninput="calcCom()"></div></div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Objetivo:</span><span class="calc-val" id="mCObjCalc">-</span></div><div class="calc-row"><span class="calc-label">Comisión:</span><span class="calc-val hi" id="mCComCalc">0€</span></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        dietaModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Dieta</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        dietaModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Dieta</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveDiet(event,'${data.id||''}')"><div class="modal-body">
-            <div class="form-row"><div class="form-group"><label>Fecha Pago</label><input type="date" class="form-input" id="mDFecha" value="${data.fecha||''}" required></div><div class="form-group"><label>Empleado</label><select class="form-select" id="mDEmp" required>${empOpts}</select></div></div>
+            <div class="form-row"><div class="form-group"><label>Fecha Viaje</label><input type="date" class="form-input" id="mDFechaViaje" value="${data.fechaViaje||''}" required></div><div class="form-group"><label>Fecha Pago</label><input type="date" class="form-input" id="mDFecha" value="${data.fecha||''}" required></div></div>
+            <div class="form-group"><label>Empleado</label><select class="form-select" id="mDEmp" required>${empOpts}</select></div>
             <div class="form-row"><div class="form-group"><label>Tipo</label><select class="form-select" id="mDTipo" onchange="calcDiet()"><option value="nacional_con"${data.tipo==='nacional_con'?' selected':''}>Nacional c/pernocta (53.34€)</option><option value="nacional_sin"${data.tipo==='nacional_sin'?' selected':''}>Nacional s/pernocta (26.67€)</option><option value="inter_con"${data.tipo==='inter_con'?' selected':''}>Internacional c/pernocta (91.35€)</option><option value="inter_sin"${data.tipo==='inter_sin'?' selected':''}>Internacional s/pernocta (48.08€)</option></select></div><div class="form-group"><label>Días</label><input type="number" class="form-input" id="mDDias" value="${data.dias||1}" min="1" required oninput="calcDiet()"></div></div>
-            <div class="form-row"><div class="form-group"><label>Incentivo (€)</label><input type="number" class="form-input" id="mDInc" value="${data.incentivo||15}" step="0.01" oninput="calcDiet()"></div><div class="form-group"><label>Estado</label><select class="form-select" id="mDEstado"><option value="pagada"${data.estado==='pagada'?' selected':''}>Pagada</option><option value="pendiente"${data.estado==='pendiente'?' selected':''}>Pendiente</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Incentivo (€)</label><input type="number" class="form-input" id="mDInc" value="${data.incentivo!=null?data.incentivo:''}" step="0.01" oninput="calcDiet()"></div><div class="form-group"><label>Estado</label><select class="form-select" id="mDEstado"><option value="pte_pago"${data.estado==='pte_pago'?' selected':''}>Pte. de pago</option><option value="pagado_pte_incentivo"${data.estado==='pagado_pte_incentivo'?' selected':''}>Pagado pte. incentivo</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option></select></div></div>
             <div class="form-group"><label>Motivo</label><input class="form-input" id="mDMotivo" value="${data.motivo||''}"></div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Dieta:</span><span class="calc-val" id="mDDietCalc">0€</span></div><div class="calc-row"><span class="calc-label">Incentivo:</span><span class="calc-val" id="mDIncCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mDTotCalc">0€</span></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        domModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Domingo</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        domModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Domingo</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveDom(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" class="form-input" id="mDoFecha" value="${data.fecha||''}" required></div><div class="form-group"><label>Tienda</label><select class="form-select" id="mDoTienda" required>${tiendaOpts}</select></div></div>
             <div class="form-row"><div class="form-group"><label>Empleado</label><select class="form-select" id="mDoEmp" required>${empOpts}</select></div><div class="form-group"><label>¿Autorizado CCAA?</label><select class="form-select" id="mDoAut"><option value="true"${data.autorizado?' selected':''}>Sí</option><option value="false"${data.autorizado===false?' selected':''}>No</option></select></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        festModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Festivo</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        festModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Festivo</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveFest(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" class="form-input" id="mFFecha" value="${data.fecha||''}" required></div><div class="form-group"><label>Nombre Festivo</label><input class="form-input" id="mFNombre" value="${data.nombre||''}" required></div></div>
             <div class="form-row"><div class="form-group"><label>Tienda</label><select class="form-select" id="mFTienda" required>${tiendaOpts}</select></div><div class="form-group"><label>Empleado</label><select class="form-select" id="mFEmp" required>${empOpts}</select></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
-        
-        noctModal: `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Nocturnidad</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+        noctModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Nocturnidad</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveNoct(event,'${data.id||''}')"><div class="modal-body">
-            <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mNMes">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mNYear"><option value="2026"${data.year==2026?' selected':''}>2026</option><option value="2025"${data.year==2025?' selected':''}>2025</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mNMes">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mNYear">${yearOpts}</select></div></div>
             <div class="form-group"><label>Empleado</label><select class="form-select" id="mNEmp" required>${empOpts}</select></div>
             <div class="form-row"><div class="form-group"><label>Semana 1</label><input type="number" class="form-input" id="mNS1" value="${data.s1||0}" step="0.5" min="0"></div><div class="form-group"><label>Semana 2</label><input type="number" class="form-input" id="mNS2" value="${data.s2||0}" step="0.5" min="0"></div></div>
             <div class="form-row"><div class="form-group"><label>Semana 3</label><input type="number" class="form-input" id="mNS3" value="${data.s3||0}" step="0.5" min="0"></div><div class="form-group"><label>Semana 4</label><input type="number" class="form-input" id="mNS4" value="${data.s4||0}" step="0.5" min="0"></div></div>
             <div class="form-group"><label>Semana 5</label><input type="number" class="form-input" id="mNS5" value="${data.s5||0}" step="0.5" min="0"></div>
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
+
+        hExtraModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Hora Extra</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <form onsubmit="saveHExtra(event,'${data.id||''}')"><div class="modal-body">
+            <div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" class="form-input" id="mHFecha" value="${data.fecha||''}" required></div><div class="form-group"><label>Empleado</label><select class="form-select" id="mHEmp" required>${empOpts}</select></div></div>
+            <div class="form-row"><div class="form-group"><label>Horas</label><input type="number" class="form-input" id="mHHoras" value="${data.horas||0}" step="0.5" min="0.5" required></div><div class="form-group"><label>Estado</label><select class="form-select" id="mHEstado"><option value="pendiente"${data.estado==='pendiente'||!data.estado?' selected':''}>Pendiente</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option><option value="disfrutado"${data.estado==='disfrutado'?' selected':''}>Disfrutado</option></select></div></div>
+            <div class="form-group"><label>Motivo</label><input class="form-input" id="mHMotivo" value="${data.motivo||''}" required></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`
     };
-    
-    let overlay = document.querySelector('.modal-bg');
-    if(!overlay) { overlay=document.createElement('div'); overlay.className='modal-bg'; overlay.onclick=e=>{if(e.target===overlay)closeModal()}; document.body.appendChild(overlay); }
+
+    let overlay=document.querySelector('.modal-bg');
+    if(!overlay){overlay=document.createElement('div');overlay.className='modal-bg';overlay.onclick=e=>{if(e.target===overlay)closeModal()};document.body.appendChild(overlay)}
     overlay.innerHTML=`<div class="modal">${modals[type]||''}</div>`;
     overlay.classList.add('active');
-    
-    if(type==='comisionModal') setTimeout(calcCom,0);
-    if(type==='dietaModal') setTimeout(calcDiet,0);
+    if(type==='comisionModal')setTimeout(calcCom,0);
+    if(type==='dietaModal')setTimeout(calcDiet,0);
 }
-function closeModal() { document.querySelector('.modal-bg')?.classList.remove('active'); }
+function closeModal(){document.querySelector('.modal-bg')?.classList.remove('active')}
 
-// Calculations
-function calcCom() {
-    const empId=$('mCEmp')?.value, tiendaId=$('mCTienda')?.value, ventas=+($('mCVentas')?.value||0), ajustes=+($('mCAjustes')?.value||0);
-    const emp=empleados.find(e=>e.id===empId), tienda=tiendas.find(t=>t.id===tiendaId);
-    if(!emp||!tienda) { $('mCObjCalc').textContent='Selecciona empleado y tienda'; $('mCComCalc').textContent='0€'; return; }
+// === CALCULATIONS ===
+function calcCom(){
+    const empId=$('mCEmp')?.value,tiendaId=$('mCTienda')?.value,ventas=+($('mCVentas')?.value||0),ajustes=+($('mCAjustes')?.value||0);
+    const mes=+($('mCMes')?.value||0),year=+($('mCYear')?.value||0);
+    const emp=empleados.find(e=>e.id===empId),tienda=tiendas.find(t=>t.id===tiendaId);
+    if(!emp||!tienda){$('mCObjCalc').textContent='Selecciona empleado y tienda';$('mCComCalc').textContent='0€';return}
     const neto=ventas+ajustes;
-    let obj=0, pct=0;
-    if(neto>=tienda.obj2){obj=2;pct=emp.obj2}else if(neto>=tienda.obj1){obj=1;pct=emp.obj1}
+    const {obj1,obj2}=getObjetivo(tiendaId,mes,year);
+    let objLvl=0,pct=emp.pctBase||0;
+    if(neto>=obj2){objLvl=2;pct=emp.obj2}else if(neto>=obj1){objLvl=1;pct=emp.obj1}
     const com=Math.max(0,neto*(pct/100));
-    $('mCObjCalc').textContent=obj?`Objetivo ${obj} (${pct}%)`:'No alcanzado';
+    $('mCObjCalc').textContent=objLvl?`Objetivo ${objLvl} (${pct}%)`:`Base (${pct}%) — Obj1: ${fmt(obj1)}`;
     $('mCComCalc').textContent=fmt(com);
 }
-function calcDiet() {
-    const tipo=$('mDTipo')?.value, dias=+($('mDDias')?.value||0), inc=+($('mDInc')?.value||0);
-    const tarifa=DIETAS[tipo]||0, importe=tarifa*dias;
+
+function calcDiet(){
+    const tipo=$('mDTipo')?.value,dias=+($('mDDias')?.value||0);
+    let inc=+($('mDInc')?.value||0);
+    if($('mDInc')?.value===''&&isInternacional(tipo)){inc=20*dias;$('mDInc').value=inc}
+    const tarifa=DIETAS[tipo]||0,importe=tarifa*dias;
     $('mDDietCalc').textContent=fmt(importe);
     $('mDIncCalc').textContent=fmt(inc);
     $('mDTotCalc').textContent=fmt(importe+inc);
 }
 
-// Save functions
-function saveTienda(e,id) {
+// === SAVE FUNCTIONS ===
+function saveTienda(e,id){
     e.preventDefault();
-    const obj1=+$('mTObj1').value;
-    const data={id:id||uid(),nombre:$('mTNombre').value,ubicacion:$('mTUbi').value,obj1,obj2:obj1*1.3,estado:$('mTEstado').value};
-    if(id) { const idx=tiendas.findIndex(t=>t.id===id); tiendas[idx]=data; }
-    else tiendas.push(data);
+    const data={id:id||uid(),nombre:$('mTNombre').value,ubicacion:$('mTUbi').value,obj1:+$('mTObj1').value,obj2:+$('mTObj2').value,estado:$('mTEstado').value};
+    if(id){const idx=tiendas.findIndex(t=>t.id===id);tiendas[idx]=data}else tiendas.push(data);
     save('tiendas');closeModal();renderTiendas();toast('Tienda guardada','ok');
 }
-function saveEmp(e,id) {
+
+function saveObj(e,tiendaId){
     e.preventDefault();
-    const data={id:id||uid(),nombre:$('mENombre').value,tiendaId:$('mETienda').value,obj1:+$('mEObj1').value,obj2:+$('mEObj2').value,estado:$('mEEstado').value};
-    if(id) { const idx=empleados.findIndex(x=>x.id===id); empleados[idx]=data; }
-    else empleados.push(data);
+    const mes=+$('mOMes').value,year=+$('mOYear').value;
+    const existing=objetivos.findIndex(o=>o.tiendaId===tiendaId&&o.mes===mes&&o.year===year);
+    const data={id:existing>=0?objetivos[existing].id:uid(),tiendaId,mes,year,obj1:+$('mOObj1').value,obj2:+$('mOObj2').value};
+    if(existing>=0)objetivos[existing]=data;else objetivos.push(data);
+    save('objetivos');closeModal();renderTiendas();toast('Objetivo guardado','ok');
+}
+
+function saveEmp(e,id){
+    e.preventDefault();
+    const data={id:id||uid(),nombre:$('mENombre').value,tiendaId:$('mETienda').value,pctBase:+$('mEBase').value,obj1:+$('mEObj1').value,obj2:+$('mEObj2').value,pctAnual:+$('mEAnual').value,estado:$('mEEstado').value};
+    if(id){const idx=empleados.findIndex(x=>x.id===id);empleados[idx]=data}else empleados.push(data);
     save('empleados');closeModal();renderEmpleados();toast('Empleado guardado','ok');
 }
-function saveCom(e,id) {
+
+function saveCom(e,id){
     e.preventDefault();
-    const empId=$('mCEmp').value, tiendaId=$('mCTienda').value, ventas=+$('mCVentas').value, ajustes=+$('mCAjustes').value;
-    const emp=empleados.find(x=>x.id===empId), tienda=tiendas.find(x=>x.id===tiendaId);
+    const empId=$('mCEmp').value,tiendaId=$('mCTienda').value,ventas=+$('mCVentas').value,ajustes=+$('mCAjustes').value;
+    const emp=empleados.find(x=>x.id===empId),tienda=tiendas.find(x=>x.id===tiendaId);
+    const mes=+$('mCMes').value,year=+$('mCYear').value;
     const neto=ventas+ajustes;
-    let obj=0, pct=0;
-    if(neto>=tienda.obj2){obj=2;pct=emp.obj2}else if(neto>=tienda.obj1){obj=1;pct=emp.obj1}
-    const data={id:id||uid(),mes:+$('mCMes').value,year:+$('mCYear').value,tiendaId,empId,ventas,ajustes,obj,pct,comision:Math.max(0,neto*(pct/100))};
-    if(id) { const idx=comisiones.findIndex(x=>x.id===id); comisiones[idx]=data; }
-    else comisiones.push(data);
+    const {obj1,obj2}=getObjetivo(tiendaId,mes,year);
+    let objLvl=0,pct=emp.pctBase||0;
+    if(neto>=obj2){objLvl=2;pct=emp.obj2}else if(neto>=obj1){objLvl=1;pct=emp.obj1}
+    const data={id:id||uid(),mes,year,tiendaId,empId,ventas,ajustes,obj:objLvl,pct,comision:Math.max(0,neto*(pct/100))};
+    if(id){const idx=comisiones.findIndex(x=>x.id===id);comisiones[idx]=data}else comisiones.push(data);
     save('comisiones');closeModal();renderComisiones();updateDash();toast('Comisión guardada','ok');
 }
-function saveDiet(e,id) {
+
+function saveDiet(e,id){
     e.preventDefault();
-    const tipo=$('mDTipo').value, dias=+$('mDDias').value, inc=+$('mDInc').value;
-    const data={id:id||uid(),fecha:$('mDFecha').value,empId:$('mDEmp').value,tipo,dias,importe:DIETAS[tipo]*dias,incentivo:inc,motivo:$('mDMotivo').value,estado:$('mDEstado').value};
-    if(id) { const idx=dietas.findIndex(x=>x.id===id); dietas[idx]=data; }
-    else dietas.push(data);
+    const tipo=$('mDTipo').value,dias=+$('mDDias').value,inc=+$('mDInc').value;
+    const data={id:id||uid(),fechaViaje:$('mDFechaViaje').value,fecha:$('mDFecha').value,empId:$('mDEmp').value,tipo,dias,importe:DIETAS[tipo]*dias,incentivo:inc,motivo:$('mDMotivo').value,estado:$('mDEstado').value};
+    if(id){const idx=dietas.findIndex(x=>x.id===id);dietas[idx]=data}else dietas.push(data);
     save('dietas');closeModal();renderDietas();updateDash();toast('Dieta guardada','ok');
 }
-function saveDom(e,id) {
+
+function saveDom(e,id){
     e.preventDefault();
     const data={id:id||uid(),fecha:$('mDoFecha').value,tiendaId:$('mDoTienda').value,empId:$('mDoEmp').value,autorizado:$('mDoAut').value==='true'};
-    if(id) { const idx=domingos.findIndex(x=>x.id===id); domingos[idx]=data; }
-    else domingos.push(data);
+    if(id){const idx=domingos.findIndex(x=>x.id===id);domingos[idx]=data}else domingos.push(data);
     save('domingos');closeModal();renderDomingos();updateDash();toast('Domingo guardado','ok');
 }
-function saveFest(e,id) {
+
+function saveFest(e,id){
     e.preventDefault();
     const data={id:id||uid(),fecha:$('mFFecha').value,nombre:$('mFNombre').value,tiendaId:$('mFTienda').value,empId:$('mFEmp').value};
-    if(id) { const idx=festivos.findIndex(x=>x.id===id); festivos[idx]=data; }
-    else festivos.push(data);
+    if(id){const idx=festivos.findIndex(x=>x.id===id);festivos[idx]=data}else festivos.push(data);
     save('festivos');closeModal();renderFestivos();updateDash();toast('Festivo guardado','ok');
 }
-function saveNoct(e,id) {
+
+function saveNoct(e,id){
     e.preventDefault();
     const data={id:id||uid(),mes:+$('mNMes').value,year:+$('mNYear').value,empId:$('mNEmp').value,s1:+$('mNS1').value,s2:+$('mNS2').value,s3:+$('mNS3').value,s4:+$('mNS4').value,s5:+$('mNS5').value};
-    if(id) { const idx=nocturnidad.findIndex(x=>x.id===id); nocturnidad[idx]=data; }
-    else nocturnidad.push(data);
+    if(id){const idx=nocturnidad.findIndex(x=>x.id===id);nocturnidad[idx]=data}else nocturnidad.push(data);
     save('nocturnidad');closeModal();renderNocturnidad();updateDash();toast('Nocturnidad guardada','ok');
 }
 
-// Edit
+function saveHExtra(e,id){
+    e.preventDefault();
+    const data={id:id||uid(),fecha:$('mHFecha').value,empId:$('mHEmp').value,horas:+$('mHHoras').value,motivo:$('mHMotivo').value,estado:$('mHEstado').value};
+    if(id){const idx=horasExtras.findIndex(x=>x.id===id);horasExtras[idx]=data}else horasExtras.push(data);
+    save('horasExtras');closeModal();renderHorasExtras();updateDash();toast('Hora extra guardada','ok');
+}
+
+// === EDIT ===
 function editTienda(id){openModal('tiendaModal',tiendas.find(x=>x.id===id))}
 function editEmp(id){openModal('empModal',empleados.find(x=>x.id===id))}
 function editCom(id){openModal('comisionModal',comisiones.find(x=>x.id===id))}
@@ -489,8 +594,9 @@ function editDiet(id){openModal('dietaModal',dietas.find(x=>x.id===id))}
 function editDom(id){openModal('domModal',domingos.find(x=>x.id===id))}
 function editFest(id){openModal('festModal',festivos.find(x=>x.id===id))}
 function editNoct(id){openModal('noctModal',nocturnidad.find(x=>x.id===id))}
+function editHExtra(id){openModal('hExtraModal',horasExtras.find(x=>x.id===id))}
 
-// Delete
+// === DELETE ===
 function delTienda(id){if(confirm('¿Eliminar?')){tiendas=tiendas.filter(x=>x.id!==id);save('tiendas');renderTiendas();toast('Eliminado','ok')}}
 function delEmp(id){if(confirm('¿Eliminar?')){empleados=empleados.filter(x=>x.id!==id);save('empleados');renderEmpleados();toast('Eliminado','ok')}}
 function delCom(id){if(confirm('¿Eliminar?')){comisiones=comisiones.filter(x=>x.id!==id);save('comisiones');renderComisiones();updateDash();toast('Eliminado','ok')}}
@@ -498,40 +604,49 @@ function delDiet(id){if(confirm('¿Eliminar?')){dietas=dietas.filter(x=>x.id!==i
 function delDom(id){if(confirm('¿Eliminar?')){domingos=domingos.filter(x=>x.id!==id);save('domingos');renderDomingos();updateDash();toast('Eliminado','ok')}}
 function delFest(id){if(confirm('¿Eliminar?')){festivos=festivos.filter(x=>x.id!==id);save('festivos');renderFestivos();updateDash();toast('Eliminado','ok')}}
 function delNoct(id){if(confirm('¿Eliminar?')){nocturnidad=nocturnidad.filter(x=>x.id!==id);save('nocturnidad');renderNocturnidad();updateDash();toast('Eliminado','ok')}}
+function delObj(id){if(confirm('¿Eliminar?')){objetivos=objetivos.filter(x=>x.id!==id);save('objetivos');renderTiendas();toast('Eliminado','ok')}}
+function delHExtra(id){if(confirm('¿Eliminar?')){horasExtras=horasExtras.filter(x=>x.id!==id);save('horasExtras');renderHorasExtras();updateDash();toast('Eliminado','ok')}}
 
-// Export
-function exportExcel() {
-    const mes=+$('expMes').value, year=+$('expYear').value;
+// === EXPORT ===
+function exportExcel(){
+    const mesVal=$('expMes').value,year=+$('expYear').value;
+    const mes=mesVal?+mesVal:0;
+    function mm(m,y){return(!mes||m==mes)&&y==year}
     const wb=XLSX.utils.book_new();
-    
-    const cF=comisiones.filter(c=>c.mes==mes&&c.year==year);
+
+    const cF=comisiones.filter(c=>mm(c.mes,c.year));
     if(cF.length){
-        const data=cF.map(c=>({Mes:MESES[c.mes],Año:c.year,Tienda:tiendas.find(t=>t.id===c.tiendaId)?.nombre,Empleado:empleados.find(e=>e.id===c.empId)?.nombre,Ventas:c.ventas,Ajustes:c.ajustes,Objetivo:c.obj,'%':c.pct,Comisión:c.comision}));
+        const data=cF.map(c=>({Mes:MESES[c.mes],Año:c.year,Tienda:tiendas.find(t=>t.id===c.tiendaId)?.nombre,Empleado:empleados.find(e=>e.id===c.empId)?.nombre,Ventas:c.ventas,Ajustes:c.ajustes,Objetivo:c.obj||'Base','%':c.pct,Comisión:c.comision}));
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Comisiones');
     }
-    const dF=dietas.filter(d=>{const dt=new Date(d.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
+    const dF=dietas.filter(d=>{const dt=new Date(d.fechaViaje||d.fecha);return mm(dt.getMonth()+1,dt.getFullYear())});
     if(dF.length){
-        const data=dF.map(d=>({Fecha:d.fecha,Empleado:empleados.find(e=>e.id===d.empId)?.nombre,Tipo:DIETA_LABELS[d.tipo],Días:d.dias,Dieta:d.importe,Incentivo:d.incentivo,Estado:d.estado}));
+        const data=dF.map(d=>({FechaViaje:d.fechaViaje,FechaPago:d.fecha,Empleado:empleados.find(e=>e.id===d.empId)?.nombre,Tipo:DIETA_LABELS[d.tipo],Días:d.dias,Dieta:d.importe,Incentivo:d.incentivo,Estado:DIETA_ESTADO_LABELS[d.estado]||d.estado,Motivo:d.motivo}));
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Dietas');
     }
-    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
+    const doF=domingos.filter(d=>{const dt=new Date(d.fecha);return mm(dt.getMonth()+1,dt.getFullYear())});
     if(doF.length){
         const data=doF.map(d=>({Fecha:d.fecha,Tienda:tiendas.find(t=>t.id===d.tiendaId)?.nombre,Empleado:empleados.find(e=>e.id===d.empId)?.nombre,Autorizado:d.autorizado?'Sí':'No'}));
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Domingos');
     }
-    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return dt.getMonth()+1==mes&&dt.getFullYear()==year});
+    const fF=festivos.filter(f=>{const dt=new Date(f.fecha);return mm(dt.getMonth()+1,dt.getFullYear())});
     if(fF.length){
         const data=fF.map(f=>({Fecha:f.fecha,Festivo:f.nombre,Tienda:tiendas.find(t=>t.id===f.tiendaId)?.nombre,Empleado:empleados.find(e=>e.id===f.empId)?.nombre}));
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Festivos');
     }
-    const nF=nocturnidad.filter(n=>n.mes==mes&&n.year==year);
+    const nF=nocturnidad.filter(n=>mm(n.mes,n.year));
     if(nF.length){
         const data=nF.map(n=>({Mes:MESES[n.mes],Año:n.year,Empleado:empleados.find(e=>e.id===n.empId)?.nombre,S1:n.s1,S2:n.s2,S3:n.s3,S4:n.s4,S5:n.s5,Total:(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0)}));
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Nocturnidad');
     }
-    
-    if(!wb.SheetNames.length) { toast('No hay datos para este mes','err'); return; }
-    XLSX.writeFile(wb,`Incidencias_${MESES[mes]}_${year}.xlsx`);
+    const hF=horasExtras.filter(h=>{const dt=new Date(h.fecha);return mm(dt.getMonth()+1,dt.getFullYear())});
+    if(hF.length){
+        const data=hF.map(h=>({Fecha:h.fecha,Empleado:empleados.find(e=>e.id===h.empId)?.nombre,Horas:h.horas,Motivo:h.motivo,Estado:h.estado}));
+        XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'HorasExtras');
+    }
+
+    if(!wb.SheetNames.length){toast('No hay datos para este periodo','err');return}
+    XLSX.writeFile(wb,`Incidencias_${mes?MESES[mes]:'Anual'}_${year}.xlsx`);
     toast('Excel exportado','ok');
 }
 
