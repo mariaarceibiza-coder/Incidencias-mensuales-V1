@@ -177,7 +177,7 @@ let nocturnidad=[];
 let objetivos=[];
 let horasExtras=[];
 let bonificaciones=[];
-let ajustes={bonifOrdinario:450,bonifDiscontinuo:450};
+let ajustes={bonifOrdinario:450,bonifDiscontinuo:450,dietaNacionalCon:53.34,dietaNacionalSin:26.67,dietaInterCon:91.35,dietaInterSin:48.08,incNacionalCon:0,incNacionalSin:0,incInterCon:20,incInterSin:20};
 let currentUser=null;
 
 const COLLECTIONS=['tiendas','empleados','comisiones','dietas','domingos','festivos','nocturnidad','objetivos','horasExtras','bonificaciones'];
@@ -224,7 +224,7 @@ async function loadAllData(){
     horasExtras=dataMap.horasExtras;
     bonificaciones=dataMap.bonificaciones;
 
-    try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes=ajustesDoc.data()}catch(e){console.error('Error loading ajustes',e)}
+    try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes={...ajustes,...ajustesDoc.data()}}catch(e){console.error('Error loading ajustes',e)}
 
     if(!tiendas.length){
         tiendas=[
@@ -391,6 +391,24 @@ function renderPage(page){
             <div class="form-row"><div class="form-group"><label>Fijo Ordinario (€/temporada)</label><input type="number" class="form-input" id="ajBonifOrdinario" value="${ajustes.bonifOrdinario}" step="0.01" min="0" required><small style="color:var(--txt2)">Para contratos indefinidos</small></div>
             <div class="form-group"><label>Fijo Discontinuo (€/temporada)</label><input type="number" class="form-input" id="ajBonifDiscontinuo" value="${ajustes.bonifDiscontinuo}" step="0.01" min="0" required><small style="color:var(--txt2)">Para contratos fijos discontinuos</small></div></div>
             <button type="submit" class="btn btn-p">Guardar ajustes</button>
+            </form></div></div>
+            <div class="card"><div class="card-header"><h2 class="card-title">Dietas por Tipo de Viaje</h2></div><div class="card-body">
+            <form onsubmit="saveAjustesForm(event)">
+            <p style="color:var(--txt2);margin-bottom:16px">Configura la tarifa diaria (€/día) de dieta según el tipo de viaje</p>
+            <div class="form-row"><div class="form-group"><label>Nacional c/pernocta (€/día)</label><input type="number" class="form-input" id="ajDietaNacionalCon" value="${ajustes.dietaNacionalCon}" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Nacional s/pernocta (€/día)</label><input type="number" class="form-input" id="ajDietaNacionalSin" value="${ajustes.dietaNacionalSin}" step="0.01" min="0" required></div></div>
+            <div class="form-row"><div class="form-group"><label>Internacional c/pernocta (€/día)</label><input type="number" class="form-input" id="ajDietaInterCon" value="${ajustes.dietaInterCon}" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Internacional s/pernocta (€/día)</label><input type="number" class="form-input" id="ajDietaInterSin" value="${ajustes.dietaInterSin}" step="0.01" min="0" required></div></div>
+            <button type="submit" class="btn btn-p">Guardar ajustes</button>
+            </form></div></div>
+            <div class="card"><div class="card-header"><h2 class="card-title">Incentivos por Tipo de Viaje</h2></div><div class="card-body">
+            <form onsubmit="saveAjustesForm(event)">
+            <p style="color:var(--txt2);margin-bottom:16px">Configura el incentivo diario (€/día) que se auto-rellena al crear una dieta</p>
+            <div class="form-row"><div class="form-group"><label>Nacional c/pernocta (€/día)</label><input type="number" class="form-input" id="ajIncNacionalCon" value="${ajustes.incNacionalCon}" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Nacional s/pernocta (€/día)</label><input type="number" class="form-input" id="ajIncNacionalSin" value="${ajustes.incNacionalSin}" step="0.01" min="0" required></div></div>
+            <div class="form-row"><div class="form-group"><label>Internacional c/pernocta (€/día)</label><input type="number" class="form-input" id="ajIncInterCon" value="${ajustes.incInterCon}" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Internacional s/pernocta (€/día)</label><input type="number" class="form-input" id="ajIncInterSin" value="${ajustes.incInterSin}" step="0.01" min="0" required></div></div>
+            <button type="submit" class="btn btn-p">Guardar ajustes</button>
             </form></div></div>`
     };
 
@@ -412,8 +430,16 @@ function renderPage(page){
 
 function saveAjustesForm(e){
     e.preventDefault();
-    ajustes.bonifOrdinario=+$('ajBonifOrdinario').value;
-    ajustes.bonifDiscontinuo=+$('ajBonifDiscontinuo').value;
+    ajustes.bonifOrdinario=+($('ajBonifOrdinario')?.value??ajustes.bonifOrdinario);
+    ajustes.bonifDiscontinuo=+($('ajBonifDiscontinuo')?.value??ajustes.bonifDiscontinuo);
+    ajustes.dietaNacionalCon=+($('ajDietaNacionalCon')?.value??ajustes.dietaNacionalCon);
+    ajustes.dietaNacionalSin=+($('ajDietaNacionalSin')?.value??ajustes.dietaNacionalSin);
+    ajustes.dietaInterCon=+($('ajDietaInterCon')?.value??ajustes.dietaInterCon);
+    ajustes.dietaInterSin=+($('ajDietaInterSin')?.value??ajustes.dietaInterSin);
+    ajustes.incNacionalCon=+($('ajIncNacionalCon')?.value??ajustes.incNacionalCon);
+    ajustes.incNacionalSin=+($('ajIncNacionalSin')?.value??ajustes.incNacionalSin);
+    ajustes.incInterCon=+($('ajIncInterCon')?.value??ajustes.incInterCon);
+    ajustes.incInterSin=+($('ajIncInterSin')?.value??ajustes.incInterSin);
     saveAjustes();
     toast('Ajustes guardados','ok');
 }
@@ -639,7 +665,7 @@ function openModal(type,data={}){
             <form onsubmit="saveDiet(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-row"><div class="form-group"><label>Fecha Viaje</label><input type="date" class="form-input" id="mDFechaViaje" value="${data.fechaViaje||''}" required></div><div class="form-group"><label>Fecha Pago</label><input type="date" class="form-input" id="mDFecha" value="${data.fecha||''}" required></div></div>
             <div class="form-group"><label>Empleado</label><select class="form-select" id="mDEmp" required>${empOpts}</select></div>
-            <div class="form-row"><div class="form-group"><label>Tipo</label><select class="form-select" id="mDTipo" onchange="calcDiet()"><option value="nacional_con"${data.tipo==='nacional_con'?' selected':''}>Nacional c/pernocta (53.34€)</option><option value="nacional_sin"${data.tipo==='nacional_sin'?' selected':''}>Nacional s/pernocta (26.67€)</option><option value="inter_con"${data.tipo==='inter_con'?' selected':''}>Internacional c/pernocta (91.35€)</option><option value="inter_sin"${data.tipo==='inter_sin'?' selected':''}>Internacional s/pernocta (48.08€)</option></select></div><div class="form-group"><label>Días</label><input type="number" class="form-input" id="mDDias" value="${data.dias||1}" min="1" required oninput="calcDiet()"></div></div>
+            <div class="form-row"><div class="form-group"><label>Tipo</label><select class="form-select" id="mDTipo" onchange="calcDiet()"><option value="nacional_con"${data.tipo==='nacional_con'?' selected':''}>Nacional c/pernocta (${ajustes.dietaNacionalCon}€)</option><option value="nacional_sin"${data.tipo==='nacional_sin'?' selected':''}>Nacional s/pernocta (${ajustes.dietaNacionalSin}€)</option><option value="inter_con"${data.tipo==='inter_con'?' selected':''}>Internacional c/pernocta (${ajustes.dietaInterCon}€)</option><option value="inter_sin"${data.tipo==='inter_sin'?' selected':''}>Internacional s/pernocta (${ajustes.dietaInterSin}€)</option></select></div><div class="form-group"><label>Días</label><input type="number" class="form-input" id="mDDias" value="${data.dias||1}" min="1" required oninput="calcDiet()"></div></div>
             <div class="form-row"><div class="form-group"><label>Incentivo (€)</label><input type="number" class="form-input" id="mDInc" value="${data.incentivo!=null?data.incentivo:''}" step="0.01" oninput="calcDiet()"></div><div class="form-group"><label>Estado</label><select class="form-select" id="mDEstado"><option value="pte_pago"${data.estado==='pte_pago'?' selected':''}>Pte. de pago</option><option value="pagado_pte_incentivo"${data.estado==='pagado_pte_incentivo'?' selected':''}>Pagado pte. incentivo</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option></select></div></div>
             <div class="form-group"><label>Motivo</label><input class="form-input" id="mDMotivo" value="${data.motivo||''}"></div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Dieta:</span><span class="calc-val" id="mDDietCalc">0€</span></div><div class="calc-row"><span class="calc-label">Incentivo:</span><span class="calc-val" id="mDIncCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mDTotCalc">0€</span></div></div>
@@ -710,11 +736,21 @@ function calcCom(){
     $('mCComCalc').textContent=fmt(com);
 }
 
+function getDietaTarifa(tipo){
+    const map={nacional_con:'dietaNacionalCon',nacional_sin:'dietaNacionalSin',inter_con:'dietaInterCon',inter_sin:'dietaInterSin'};
+    return ajustes[map[tipo]]??DIETAS[tipo]??0;
+}
+function getIncTarifa(tipo){
+    const map={nacional_con:'incNacionalCon',nacional_sin:'incNacionalSin',inter_con:'incInterCon',inter_sin:'incInterSin'};
+    return ajustes[map[tipo]]??0;
+}
+
 function calcDiet(){
     const tipo=$('mDTipo')?.value,dias=+($('mDDias')?.value||0);
     let inc=+($('mDInc')?.value||0);
-    if($('mDInc')?.value===''&&isInternacional(tipo)){inc=20*dias;$('mDInc').value=inc}
-    const tarifa=DIETAS[tipo]||0,importe=tarifa*dias;
+    const incTarifa=getIncTarifa(tipo);
+    if($('mDInc')?.value===''&&incTarifa>0){inc=incTarifa*dias;$('mDInc').value=inc}
+    const tarifa=getDietaTarifa(tipo),importe=tarifa*dias;
     $('mDDietCalc').textContent=fmt(importe);
     $('mDIncCalc').textContent=fmt(inc);
     $('mDTotCalc').textContent=fmt(importe+inc);
@@ -829,7 +865,7 @@ function saveCom(e,id){
 function saveDiet(e,id){
     e.preventDefault();
     const tipo=$('mDTipo').value,dias=+$('mDDias').value,inc=+$('mDInc').value;
-    const data={id:id||uid(),fechaViaje:$('mDFechaViaje').value,fecha:$('mDFecha').value,empId:$('mDEmp').value,tipo,dias,importe:DIETAS[tipo]*dias,incentivo:inc,motivo:$('mDMotivo').value,estado:$('mDEstado').value};
+    const data={id:id||uid(),fechaViaje:$('mDFechaViaje').value,fecha:$('mDFecha').value,empId:$('mDEmp').value,tipo,dias,importe:getDietaTarifa(tipo)*dias,incentivo:inc,motivo:$('mDMotivo').value,estado:$('mDEstado').value};
     if(id){const idx=dietas.findIndex(x=>x.id===id);dietas[idx]=data}else dietas.push(data);
     saveDoc('dietas',data);closeModal();renderDietas();updateDash();toast('Dieta guardada','ok');
 }
