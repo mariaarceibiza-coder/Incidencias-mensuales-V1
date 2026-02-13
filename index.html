@@ -6,6 +6,9 @@
     <title>Incidencias Nómina | Charo Ruiz Ibiza</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         :root{--bg:#FAF9F7;--card:#FFF;--sec:#F5F3F0;--txt:#1A1A1A;--txt2:#6B6B6B;--muted:#9B9B9B;--border:#E8E6E3;--accent:#C4A77D;--accent2:#A68B5B;--ok:#5B8C5A;--warn:#D4A03E;--err:#C45C5C;--info:#5B7C9C;--r:8px;--display:'Cormorant Garamond',serif;--body:'DM Sans',sans-serif}
         *{margin:0;padding:0;box-sizing:border-box}body{font-family:var(--body);background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
@@ -64,12 +67,35 @@
     <div class="auth-box">
         <div class="auth-logo">Charo Ruiz Ibiza</div>
         <div class="auth-sub">Gestión de Incidencias</div>
-        <p style="color:var(--txt2);margin-bottom:24px;font-size:13px">Versión local - Los datos se guardan en tu navegador</p>
-        <div class="form-group">
-            <label>Tu nombre</label>
-            <input type="text" class="form-input" id="localUser" value="María" required>
+        <div class="auth-err" id="authErr"></div>
+        <div id="loginForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" class="form-input" id="authEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" class="form-input" id="authPass" required>
+            </div>
+            <button class="btn btn-p btn-block" onclick="doLogin()">Iniciar sesión</button>
+            <div class="auth-toggle">¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate</a></div>
         </div>
-        <button class="btn btn-p btn-block" onclick="loginLocal()">Entrar</button>
+        <div id="registerForm" style="display:none">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" class="form-input" id="regName" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" class="form-input" id="regEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña (mín. 6 caracteres)</label>
+                <input type="password" class="form-input" id="regPass" required>
+            </div>
+            <button class="btn btn-p btn-block" onclick="doRegister()">Crear cuenta</button>
+            <div class="auth-toggle">¿Ya tienes cuenta? <a href="#" onclick="showLogin()">Inicia sesión</a></div>
+        </div>
     </div>
 </div>
 
@@ -100,8 +126,8 @@
             </div>
         </nav>
         <div class="sb-footer">
-            <div class="user-info"><div class="avatar" id="avatar">M</div><div><div class="user-name" id="uName">María</div><div class="user-email">Modo local<span class="local-badge">💾</span></div></div></div>
-            <button class="btn btn-s btn-sm btn-block" onclick="logoutLocal()">Salir</button>
+            <div class="user-info"><div class="avatar" id="avatar">M</div><div><div class="user-name" id="uName">Usuario</div><div class="user-email" id="uEmail">Cloud<span class="local-badge">☁️</span></div></div></div>
+            <button class="btn btn-s btn-sm btn-block" onclick="doLogout()">Salir</button>
         </div>
     </aside>
     <main class="main" id="main"></main>
@@ -110,6 +136,19 @@
 <div class="toast-box" id="toasts"></div>
 
 <script>
+// === FIREBASE INIT ===
+const firebaseConfig = {
+    apiKey: "AIzaSyDYPqd2EAIHBwd6F-9xupeLRnLS2dn7XYE",
+    authDomain: "incidencias-mensuales-v1.firebaseapp.com",
+    projectId: "incidencias-mensuales-v1",
+    storageBucket: "incidencias-mensuales-v1.firebasestorage.app",
+    messagingSenderId: "1078098656352",
+    appId: "1:1078098656352:web:9b48069da5f244d6d59705"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 function $(id){return document.getElementById(id)}
 function show(id){const el=$(id);if(el)el.classList.remove('hidden')}
 function hide(id){const el=$(id);if(el)el.classList.add('hidden')}
@@ -127,31 +166,114 @@ const DIETA_ESTADO_BADGE={pte_pago:'badge-err',pagado_pte_incentivo:'badge-warn'
 const HEXTRA_ESTADOS=['pendiente','pagado','disfrutado'];
 const HEXTRA_BADGE={pendiente:'badge-warn',pagado:'badge-ok',disfrutado:'badge-info'};
 
-let tiendas=JSON.parse(localStorage.getItem('cr_tiendas')||'[]');
-let empleados=JSON.parse(localStorage.getItem('cr_empleados')||'[]');
-let comisiones=JSON.parse(localStorage.getItem('cr_comisiones')||'[]');
-let dietas=JSON.parse(localStorage.getItem('cr_dietas')||'[]');
-let domingos=JSON.parse(localStorage.getItem('cr_domingos')||'[]');
-let festivos=JSON.parse(localStorage.getItem('cr_festivos')||'[]');
-let nocturnidad=JSON.parse(localStorage.getItem('cr_nocturnidad')||'[]');
-let objetivos=JSON.parse(localStorage.getItem('cr_objetivos')||'[]');
-let horasExtras=JSON.parse(localStorage.getItem('cr_horasExtras')||'[]');
-let bonificaciones=JSON.parse(localStorage.getItem('cr_bonificaciones')||'[]');
-let currentUser=localStorage.getItem('cr_user')||'';
+let tiendas=[];
+let empleados=[];
+let comisiones=[];
+let dietas=[];
+let domingos=[];
+let festivos=[];
+let nocturnidad=[];
+let objetivos=[];
+let horasExtras=[];
+let bonificaciones=[];
+let currentUser=null;
 
-if(!tiendas.length){
-    tiendas=[
-        {id:uid(),nombre:'Ibiza',ubicacion:'Ibiza',estado:'activa'},
-        {id:uid(),nombre:'Lagasca',ubicacion:'Madrid',estado:'activa'},
-        {id:uid(),nombre:'Banús',ubicacion:'Marbella',estado:'activa'}
-    ];
-    save('tiendas');
-}
+const COLLECTIONS=['tiendas','empleados','comisiones','dietas','domingos','festivos','nocturnidad','objetivos','horasExtras','bonificaciones'];
 
 function save(key){
     const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras,bonificaciones};
-    localStorage.setItem('cr_'+key,JSON.stringify(data[key]));
+    const items=data[key];
+    const batch=db.batch();
+    const col=db.collection(key);
+    items.forEach(item=>{
+        batch.set(col.doc(item.id),item);
+    });
+    batch.commit().catch(err=>console.error('Error guardando '+key,err));
 }
+
+function saveDoc(key,item){
+    db.collection(key).doc(item.id).set(item).catch(err=>console.error('Error guardando doc',err));
+}
+
+function deleteDoc(key,id){
+    db.collection(key).doc(id).delete().catch(err=>console.error('Error eliminando doc',err));
+}
+
+async function loadAllData(){
+    const promises=COLLECTIONS.map(col=>db.collection(col).get());
+    const snapshots=await Promise.all(promises);
+    const dataMap={};
+    COLLECTIONS.forEach((col,i)=>{
+        dataMap[col]=[];
+        snapshots[i].forEach(doc=>dataMap[col].push(doc.data()));
+    });
+    tiendas=dataMap.tiendas;
+    empleados=dataMap.empleados;
+    comisiones=dataMap.comisiones;
+    dietas=dataMap.dietas;
+    domingos=dataMap.domingos;
+    festivos=dataMap.festivos;
+    nocturnidad=dataMap.nocturnidad;
+    objetivos=dataMap.objetivos;
+    horasExtras=dataMap.horasExtras;
+    bonificaciones=dataMap.bonificaciones;
+
+    if(!tiendas.length){
+        tiendas=[
+            {id:uid(),nombre:'Ibiza',ubicacion:'Ibiza',estado:'activa'},
+            {id:uid(),nombre:'Lagasca',ubicacion:'Madrid',estado:'activa'},
+            {id:uid(),nombre:'Banús',ubicacion:'Marbella',estado:'activa'}
+        ];
+        save('tiendas');
+    }
+}
+
+// === FIREBASE AUTH ===
+function showAuthErr(msg){const el=$('authErr');el.textContent=msg;el.style.display='block'}
+function hideAuthErr(){$('authErr').style.display='none'}
+function showRegister(){$('loginForm').style.display='none';$('registerForm').style.display='block';hideAuthErr()}
+function showLogin(){$('loginForm').style.display='block';$('registerForm').style.display='none';hideAuthErr()}
+
+async function doLogin(){
+    hideAuthErr();
+    const email=$('authEmail').value.trim(),pass=$('authPass').value;
+    if(!email||!pass){showAuthErr('Introduce email y contraseña');return}
+    try{await auth.signInWithEmailAndPassword(email,pass)}
+    catch(e){showAuthErr(e.code==='auth/user-not-found'?'Usuario no encontrado':e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'?'Contraseña incorrecta':'Error: '+e.message)}
+}
+
+async function doRegister(){
+    hideAuthErr();
+    const name=$('regName').value.trim(),email=$('regEmail').value.trim(),pass=$('regPass').value;
+    if(!name||!email||!pass){showAuthErr('Rellena todos los campos');return}
+    if(pass.length<6){showAuthErr('La contraseña debe tener al menos 6 caracteres');return}
+    try{
+        const cred=await auth.createUserWithEmailAndPassword(email,pass);
+        await cred.user.updateProfile({displayName:name});
+    }catch(e){showAuthErr(e.code==='auth/email-already-in-use'?'Este email ya está registrado':e.code==='auth/weak-password'?'Contraseña demasiado débil':'Error: '+e.message)}
+}
+
+function doLogout(){auth.signOut()}
+
+auth.onAuthStateChanged(async user=>{
+    if(user){
+        currentUser=user;
+        show('load');
+        try{
+            await loadAllData();
+            showApp();
+        }catch(e){
+            console.error('Error cargando datos',e);
+            toast('Error cargando datos','err');
+            hide('load');
+        }
+    } else {
+        currentUser=null;
+        $('app').classList.remove('active');
+        show('authScreen');
+        hide('load');
+    }
+});
 
 function getObjetivo(tiendaId,mes,year){
     const o=objetivos.find(x=>x.tiendaId===tiendaId&&x.mes==mes&&x.year==year);
@@ -160,19 +282,13 @@ function getObjetivo(tiendaId,mes,year){
 
 function isInternacional(tipo){return tipo==='inter_con'||tipo==='inter_sin'}
 
-function loginLocal(){
-    const name=$('localUser').value.trim()||'Usuario';
-    currentUser=name;
-    localStorage.setItem('cr_user',name);
-    showApp();
-}
-function logoutLocal(){currentUser='';localStorage.removeItem('cr_user');location.reload()}
 function showApp(){
     hide('authScreen');$('app').classList.add('active');
-    $('uName').textContent=currentUser;$('avatar').textContent=currentUser[0].toUpperCase();
+    const name=currentUser.displayName||currentUser.email.split('@')[0];
+    $('uName').textContent=name;$('avatar').textContent=name[0].toUpperCase();
+    $('uEmail').innerHTML=currentUser.email+'<span class="local-badge">☁️</span>';
     renderPage('dashboard');hide('load');
 }
-document.addEventListener('DOMContentLoaded',()=>{if(currentUser)showApp();else hide('load')});
 
 // === RENDER PAGE ===
 function renderPage(page){
@@ -422,13 +538,13 @@ function cycleDietaEstado(id){
     const d=dietas.find(x=>x.id===id);if(!d)return;
     const i=DIETA_ESTADOS.indexOf(d.estado);
     d.estado=DIETA_ESTADOS[(i+1)%DIETA_ESTADOS.length];
-    save('dietas');renderDietas();toast('Estado actualizado','ok');
+    saveDoc('dietas',d);renderDietas();toast('Estado actualizado','ok');
 }
 function cycleHExtraEstado(id){
     const h=horasExtras.find(x=>x.id===id);if(!h)return;
     const i=HEXTRA_ESTADOS.indexOf(h.estado);
     h.estado=HEXTRA_ESTADOS[(i+1)%HEXTRA_ESTADOS.length];
-    save('horasExtras');renderHorasExtras();toast('Estado actualizado','ok');
+    saveDoc('horasExtras',h);renderHorasExtras();toast('Estado actualizado','ok');
 }
 
 // === MODALS ===
@@ -593,13 +709,13 @@ function marcarAnualPerdido(empId,year){
     const emp=empleados.find(e=>e.id===empId);if(!emp)return;
     if(!emp.anualPerdido)emp.anualPerdido={};
     emp.anualPerdido[year]=motivo;
-    save('empleados');renderComisionesAnuales();toast('Comisión anual marcada como perdida','err');
+    saveDoc('empleados',emp);renderComisionesAnuales();toast('Comisión anual marcada como perdida','err');
 }
 
 function restaurarAnual(empId,year){
     const emp=empleados.find(e=>e.id===empId);if(!emp||!emp.anualPerdido)return;
     delete emp.anualPerdido[year];
-    save('empleados');renderComisionesAnuales();toast('Comisión anual restaurada','ok');
+    saveDoc('empleados',emp);renderComisionesAnuales();toast('Comisión anual restaurada','ok');
 }
 
 function renderBonificaciones(){
@@ -615,7 +731,7 @@ function renderBonificaciones(){
 function cycleBonifEstado(id){
     const b=bonificaciones.find(x=>x.id===id);if(!b)return;
     b.estado=b.estado==='pendiente'?'pagado':'pendiente';
-    save('bonificaciones');renderBonificaciones();toast('Estado actualizado','ok');
+    saveDoc('bonificaciones',b);renderBonificaciones();toast('Estado actualizado','ok');
 }
 
 // === SAVE FUNCTIONS ===
@@ -623,7 +739,7 @@ function saveTienda(e,id){
     e.preventDefault();
     const data={id:id||uid(),nombre:$('mTNombre').value,ubicacion:$('mTUbi').value,estado:$('mTEstado').value};
     if(id){const idx=tiendas.findIndex(t=>t.id===id);tiendas[idx]=data}else tiendas.push(data);
-    save('tiendas');closeModal();renderTiendas();toast('Tienda guardada','ok');
+    saveDoc('tiendas',data);closeModal();renderTiendas();toast('Tienda guardada','ok');
 }
 
 function saveObj(e,id){
@@ -633,14 +749,14 @@ function saveObj(e,id){
     const existing=id?objetivos.findIndex(o=>o.id===id):objetivos.findIndex(o=>o.tiendaId===tiendaId&&o.mes===mes&&o.year===year);
     const data={id:existing>=0?objetivos[existing].id:uid(),tiendaId,mes,year,obj1,obj2};
     if(existing>=0)objetivos[existing]=data;else objetivos.push(data);
-    save('objetivos');closeModal();if($('objPageTb'))renderObjetivosPage();toast('Objetivo guardado','ok');
+    saveDoc('objetivos',data);closeModal();if($('objPageTb'))renderObjetivosPage();toast('Objetivo guardado','ok');
 }
 
 function saveEmp(e,id){
     e.preventDefault();
     const data={id:id||uid(),nombre:$('mENombre').value,tiendaId:$('mETienda').value,obj1:+$('mEObj1').value,obj2:+$('mEObj2').value,pctAnual:+$('mEAnual').value,tipoContrato:$('mETipo').value,bonifAsistencia:$('mEBonif').value,estado:$('mEEstado').value};
-    if(id){const idx=empleados.findIndex(x=>x.id===id);empleados[idx]=data}else empleados.push(data);
-    save('empleados');closeModal();renderEmpleados();toast('Empleado guardado','ok');
+    if(id){const existing=empleados.find(x=>x.id===id);if(existing&&existing.anualPerdido)data.anualPerdido=existing.anualPerdido;const idx=empleados.findIndex(x=>x.id===id);empleados[idx]=data}else empleados.push(data);
+    saveDoc('empleados',data);closeModal();renderEmpleados();toast('Empleado guardado','ok');
 }
 
 function saveCom(e,id){
@@ -654,7 +770,7 @@ function saveCom(e,id){
     if(neto>=obj2){objLvl=2;pct=emp.obj2}
     const data={id:id||uid(),mes,year,tiendaId,empId,ventas,ajustes,obj:objLvl,pct,comision:Math.max(0,neto*(pct/100))};
     if(id){const idx=comisiones.findIndex(x=>x.id===id);comisiones[idx]=data}else comisiones.push(data);
-    save('comisiones');closeModal();renderComisiones();updateDash();toast('Comisión guardada','ok');
+    saveDoc('comisiones',data);closeModal();renderComisiones();updateDash();toast('Comisión guardada','ok');
 }
 
 function saveDiet(e,id){
@@ -662,35 +778,35 @@ function saveDiet(e,id){
     const tipo=$('mDTipo').value,dias=+$('mDDias').value,inc=+$('mDInc').value;
     const data={id:id||uid(),fechaViaje:$('mDFechaViaje').value,fecha:$('mDFecha').value,empId:$('mDEmp').value,tipo,dias,importe:DIETAS[tipo]*dias,incentivo:inc,motivo:$('mDMotivo').value,estado:$('mDEstado').value};
     if(id){const idx=dietas.findIndex(x=>x.id===id);dietas[idx]=data}else dietas.push(data);
-    save('dietas');closeModal();renderDietas();updateDash();toast('Dieta guardada','ok');
+    saveDoc('dietas',data);closeModal();renderDietas();updateDash();toast('Dieta guardada','ok');
 }
 
 function saveDom(e,id){
     e.preventDefault();
     const data={id:id||uid(),fecha:$('mDoFecha').value,tiendaId:$('mDoTienda').value,empId:$('mDoEmp').value,autorizado:$('mDoAut').value==='true'};
     if(id){const idx=domingos.findIndex(x=>x.id===id);domingos[idx]=data}else domingos.push(data);
-    save('domingos');closeModal();renderDomingos();updateDash();toast('Domingo guardado','ok');
+    saveDoc('domingos',data);closeModal();renderDomingos();updateDash();toast('Domingo guardado','ok');
 }
 
 function saveFest(e,id){
     e.preventDefault();
     const data={id:id||uid(),fecha:$('mFFecha').value,nombre:$('mFNombre').value,tiendaId:$('mFTienda').value,empId:$('mFEmp').value};
     if(id){const idx=festivos.findIndex(x=>x.id===id);festivos[idx]=data}else festivos.push(data);
-    save('festivos');closeModal();renderFestivos();updateDash();toast('Festivo guardado','ok');
+    saveDoc('festivos',data);closeModal();renderFestivos();updateDash();toast('Festivo guardado','ok');
 }
 
 function saveNoct(e,id){
     e.preventDefault();
     const data={id:id||uid(),mes:+$('mNMes').value,year:+$('mNYear').value,empId:$('mNEmp').value,s1:+$('mNS1').value,s2:+$('mNS2').value,s3:+$('mNS3').value,s4:+$('mNS4').value,s5:+$('mNS5').value};
     if(id){const idx=nocturnidad.findIndex(x=>x.id===id);nocturnidad[idx]=data}else nocturnidad.push(data);
-    save('nocturnidad');closeModal();renderNocturnidad();updateDash();toast('Nocturnidad guardada','ok');
+    saveDoc('nocturnidad',data);closeModal();renderNocturnidad();updateDash();toast('Nocturnidad guardada','ok');
 }
 
 function saveHExtra(e,id){
     e.preventDefault();
     const data={id:id||uid(),fecha:$('mHFecha').value,empId:$('mHEmp').value,horas:+$('mHHoras').value,motivo:$('mHMotivo').value,estado:$('mHEstado').value};
     if(id){const idx=horasExtras.findIndex(x=>x.id===id);horasExtras[idx]=data}else horasExtras.push(data);
-    save('horasExtras');closeModal();renderHorasExtras();updateDash();toast('Hora extra guardada','ok');
+    saveDoc('horasExtras',data);closeModal();renderHorasExtras();updateDash();toast('Hora extra guardada','ok');
 }
 
 function saveBonif(e,id){
@@ -701,7 +817,7 @@ function saveBonif(e,id){
     const importe=Math.max(0,proporcional-descuento);
     const data={id:id||uid(),year:+$('mBYear').value,temporada:$('mBTemp').value,empId:$('mBEmp').value,diasTrabajados:dias,diasTemporada:diasTemp,faltas,importe,estado:$('mBEstado').value};
     if(id){const idx=bonificaciones.findIndex(x=>x.id===id);bonificaciones[idx]=data}else bonificaciones.push(data);
-    save('bonificaciones');closeModal();renderBonificaciones();toast('Bonificación guardada','ok');
+    saveDoc('bonificaciones',data);closeModal();renderBonificaciones();toast('Bonificación guardada','ok');
 }
 
 // === EDIT ===
@@ -717,16 +833,16 @@ function editBonif(id){openModal('bonifModal',bonificaciones.find(x=>x.id===id))
 function editObj(id){openModal('objModal',objetivos.find(x=>x.id===id))}
 
 // === DELETE ===
-function delTienda(id){if(confirm('¿Eliminar?')){tiendas=tiendas.filter(x=>x.id!==id);save('tiendas');renderTiendas();toast('Eliminado','ok')}}
-function delEmp(id){if(confirm('¿Eliminar?')){empleados=empleados.filter(x=>x.id!==id);save('empleados');renderEmpleados();toast('Eliminado','ok')}}
-function delCom(id){if(confirm('¿Eliminar?')){comisiones=comisiones.filter(x=>x.id!==id);save('comisiones');renderComisiones();updateDash();toast('Eliminado','ok')}}
-function delDiet(id){if(confirm('¿Eliminar?')){dietas=dietas.filter(x=>x.id!==id);save('dietas');renderDietas();updateDash();toast('Eliminado','ok')}}
-function delDom(id){if(confirm('¿Eliminar?')){domingos=domingos.filter(x=>x.id!==id);save('domingos');renderDomingos();updateDash();toast('Eliminado','ok')}}
-function delFest(id){if(confirm('¿Eliminar?')){festivos=festivos.filter(x=>x.id!==id);save('festivos');renderFestivos();updateDash();toast('Eliminado','ok')}}
-function delNoct(id){if(confirm('¿Eliminar?')){nocturnidad=nocturnidad.filter(x=>x.id!==id);save('nocturnidad');renderNocturnidad();updateDash();toast('Eliminado','ok')}}
-function delObj(id){if(confirm('¿Eliminar?')){objetivos=objetivos.filter(x=>x.id!==id);save('objetivos');if($('objPageTb'))renderObjetivosPage();toast('Eliminado','ok')}}
-function delHExtra(id){if(confirm('¿Eliminar?')){horasExtras=horasExtras.filter(x=>x.id!==id);save('horasExtras');renderHorasExtras();updateDash();toast('Eliminado','ok')}}
-function delBonif(id){if(confirm('¿Eliminar?')){bonificaciones=bonificaciones.filter(x=>x.id!==id);save('bonificaciones');renderBonificaciones();toast('Eliminado','ok')}}
+function delTienda(id){if(confirm('¿Eliminar?')){tiendas=tiendas.filter(x=>x.id!==id);deleteDoc('tiendas',id);renderTiendas();toast('Eliminado','ok')}}
+function delEmp(id){if(confirm('¿Eliminar?')){empleados=empleados.filter(x=>x.id!==id);deleteDoc('empleados',id);renderEmpleados();toast('Eliminado','ok')}}
+function delCom(id){if(confirm('¿Eliminar?')){comisiones=comisiones.filter(x=>x.id!==id);deleteDoc('comisiones',id);renderComisiones();updateDash();toast('Eliminado','ok')}}
+function delDiet(id){if(confirm('¿Eliminar?')){dietas=dietas.filter(x=>x.id!==id);deleteDoc('dietas',id);renderDietas();updateDash();toast('Eliminado','ok')}}
+function delDom(id){if(confirm('¿Eliminar?')){domingos=domingos.filter(x=>x.id!==id);deleteDoc('domingos',id);renderDomingos();updateDash();toast('Eliminado','ok')}}
+function delFest(id){if(confirm('¿Eliminar?')){festivos=festivos.filter(x=>x.id!==id);deleteDoc('festivos',id);renderFestivos();updateDash();toast('Eliminado','ok')}}
+function delNoct(id){if(confirm('¿Eliminar?')){nocturnidad=nocturnidad.filter(x=>x.id!==id);deleteDoc('nocturnidad',id);renderNocturnidad();updateDash();toast('Eliminado','ok')}}
+function delObj(id){if(confirm('¿Eliminar?')){objetivos=objetivos.filter(x=>x.id!==id);deleteDoc('objetivos',id);if($('objPageTb'))renderObjetivosPage();toast('Eliminado','ok')}}
+function delHExtra(id){if(confirm('¿Eliminar?')){horasExtras=horasExtras.filter(x=>x.id!==id);deleteDoc('horasExtras',id);renderHorasExtras();updateDash();toast('Eliminado','ok')}}
+function delBonif(id){if(confirm('¿Eliminar?')){bonificaciones=bonificaciones.filter(x=>x.id!==id);deleteDoc('bonificaciones',id);renderBonificaciones();toast('Eliminado','ok')}}
 
 // === EXPORT ===
 function exportExcel(){
