@@ -138,7 +138,7 @@
             <div class="sb-tag">Incidencias Nómina</div>
         </div>
         <nav class="sb-nav">
-            <div class="nav-sec"><div class="nav-title">General</div><a class="nav-item active" data-p="dashboard">📊 Dashboard</a></div>
+            <div class="nav-sec"><div class="nav-title">General</div><a class="nav-item active" data-p="dashboard">📊 Dashboard</a><a class="nav-item" data-p="notas">📝 Notas</a></div>
             <div class="nav-sec"><div class="nav-title">Incidencias</div>
                 <a class="nav-item" data-p="comisiones">💰 Comisiones</a>
                 <a class="nav-item" data-p="comisionesAnuales">📈 Comisiones Anuales</a>
@@ -208,13 +208,14 @@ let nocturnidad=[];
 let objetivos=[];
 let horasExtras=[];
 let bonificaciones=[];
+let notas=[];
 let ajustes={bonifOrdinario:450,bonifDiscontinuo:450,dietaNacionalCon:53.34,dietaNacionalSin:26.67,dietaInterCon:91.35,dietaInterSin:48.08,incNacionalCon:0,incNacionalSin:0,incInterCon:20,incInterSin:20};
 let currentUser=null;
 
-const COLLECTIONS=['tiendas','empleados','comisiones','dietas','domingos','festivos','nocturnidad','objetivos','horasExtras','bonificaciones'];
+const COLLECTIONS=['tiendas','empleados','comisiones','dietas','domingos','festivos','nocturnidad','objetivos','horasExtras','bonificaciones','notas'];
 
 function save(key){
-    const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras,bonificaciones};
+    const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras,bonificaciones,notas};
     const items=data[key];
     const batch=db.batch();
     const col=db.collection(key);
@@ -254,6 +255,7 @@ async function loadAllData(){
     objetivos=dataMap.objetivos;
     horasExtras=dataMap.horasExtras;
     bonificaciones=dataMap.bonificaciones;
+    notas=dataMap.notas;
 
     try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes={...ajustes,...ajustesDoc.data()}}catch(e){console.error('Error loading ajustes',e)}
 
@@ -410,6 +412,14 @@ function renderPage(page){
             <div class="filter-bar"><select class="form-select" id="objFTienda" onchange="renderObjetivosPage()"><option value="">Todas las tiendas</option>${tiendaOpts}</select><select class="form-select" id="objFYear" onchange="renderObjetivosPage()">${yearOpts}</select></div>
             <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Tienda</th><th>Mes</th><th>Año</th><th>Objetivo 1</th><th>Objetivo 2</th><th></th></tr></thead><tbody id="objPageTb"></tbody></table></div></div></div>`,
 
+        notas:`
+            <div class="page-header"><div><h1 class="page-title">Notas</h1><p class="page-sub">Apuntes y recordatorios</p></div><button class="btn btn-p" onclick="openModal('notaModal')">+ Nueva</button></div>
+            <div id="notasListView"><div id="notasGrid"></div></div>
+            <div id="notaDetailView" style="display:none">
+                <button class="btn btn-s btn-sm" onclick="volverNotas()" style="margin-bottom:16px">← Volver al listado</button>
+                <div class="card"><div class="card-header"><h2 class="card-title" id="notaDetTitulo"></h2><div class="actions"><button class="act-btn" id="notaDetEdit">✏️</button><button class="act-btn del" id="notaDetDel">🗑️</button></div></div><div class="card-body"><div id="notaDetFecha" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div><div id="notaDetContenido" style="white-space:pre-wrap;line-height:1.7"></div></div></div>
+            </div>`,
+
         exportar:`
             <div class="page-header"><div><h1 class="page-title">Exportar</h1><p class="page-sub">Genera Excel para gestoría</p></div></div>
             <div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="expMes"><option value="">Todos</option>${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="expYear">${yearOpts}</select></div></div><button class="btn btn-p" onclick="exportExcel()">📥 Descargar Excel</button></div></div>`,
@@ -456,6 +466,7 @@ function renderPage(page){
     if(page==='empleados')renderEmpleados();
     if(page==='tiendas')renderTiendas();
     if(page==='objetivosPage')renderObjetivosPage();
+    if(page==='notas')renderNotas();
     if(page==='exportar'){$('expMes').value=now.getMonth()+1;$('expYear').value=now.getFullYear()}
 }
 
@@ -738,7 +749,13 @@ function openModal(type,data={}){
             <div class="form-group"><label>Faltas (días no trabajados sin justificar)</label><input type="number" class="form-input" id="mBFaltas" value="${data.faltas||0}" min="0" oninput="calcBonif()"></div>
             <div class="form-group"><label>Estado</label><select class="form-select" id="mBEstado"><option value="pendiente"${data.estado==='pendiente'||!data.estado?' selected':''}>Pendiente</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option></select></div>
             <div class="calc-box"><div class="calc-row"><span class="calc-label">Base temporada:</span><span class="calc-val" id="mBBaseCalc">0€</span></div><div class="calc-row"><span class="calc-label">Proporcional (días):</span><span class="calc-val" id="mBCalc">0€</span></div><div class="calc-row"><span class="calc-label">Faltas descuento:</span><span class="calc-val" id="mBDescCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mBTotCalc">0€</span></div></div>
-            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`;})()
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`;})(),
+
+        notaModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Nota</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <form onsubmit="saveNota(event,'${data.id||''}')"><div class="modal-body">
+            <div class="form-group"><label>Título</label><input class="form-input" id="mNotaTitulo" value="${data.titulo||''}" required></div>
+            <div class="form-group"><label>Contenido</label><textarea class="form-input" id="mNotaContenido" rows="8" style="resize:vertical">${data.contenido||''}</textarea></div>
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`
     };
 
     let overlay=document.querySelector('.modal-bg');
@@ -941,6 +958,49 @@ function saveBonif(e,id){
     if(id){const idx=bonificaciones.findIndex(x=>x.id===id);bonificaciones[idx]=data}else bonificaciones.push(data);
     saveDoc('bonificaciones',data);closeModal();renderBonificaciones();toast('Bonificación guardada','ok');
 }
+
+// === NOTAS ===
+function renderNotas(){
+    const sorted=notas.slice().sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+    const grid=$('notasGrid');
+    if(!grid)return;
+    grid.innerHTML=sorted.length?sorted.map(n=>{
+        const preview=(n.contenido||'').substring(0,120)+(n.contenido&&n.contenido.length>120?'…':'');
+        const fecha=n.updatedAt?fmtDate(n.updatedAt):fmtDate(n.createdAt);
+        return `<div class="card" style="cursor:pointer" onclick="viewNota('${n.id}')"><div class="card-header"><h2 class="card-title" style="font-size:16px">${n.titulo||'Sin título'}</h2><div class="actions" onclick="event.stopPropagation()"><button class="act-btn" onclick="editNota('${n.id}')">✏️</button><button class="act-btn del" onclick="delNota('${n.id}')">🗑️</button></div></div><div class="card-body" style="padding:12px 20px"><p style="color:var(--txt2);font-size:13px;margin-bottom:4px">${fecha}</p><p style="font-size:13px">${preview||'<span style="color:var(--muted)">Sin contenido</span>'}</p></div></div>`;
+    }).join(''):'<div class="empty"><h3>Sin notas</h3><p>Crea tu primera nota con el botón + Nueva</p></div>';
+    if($('notasListView'))$('notasListView').style.display='block';
+    if($('notaDetailView'))$('notaDetailView').style.display='none';
+}
+
+function viewNota(id){
+    const n=notas.find(x=>x.id===id);if(!n)return;
+    $('notasListView').style.display='none';
+    $('notaDetailView').style.display='block';
+    $('notaDetTitulo').textContent=n.titulo||'Sin título';
+    $('notaDetFecha').textContent=(n.updatedAt?'Editada: ':'Creada: ')+(n.updatedAt?fmtDate(n.updatedAt):fmtDate(n.createdAt));
+    $('notaDetContenido').textContent=n.contenido||'';
+    $('notaDetEdit').onclick=()=>editNota(id);
+    $('notaDetDel').onclick=()=>{delNota(id)};
+}
+
+function volverNotas(){
+    $('notasListView').style.display='block';
+    $('notaDetailView').style.display='none';
+}
+
+function saveNota(e,id){
+    e.preventDefault();
+    const now=new Date().toISOString();
+    const data={id:id||uid(),titulo:$('mNotaTitulo').value.trim(),contenido:$('mNotaContenido').value,updatedAt:now};
+    if(!id)data.createdAt=now;
+    else{const existing=notas.find(x=>x.id===id);if(existing)data.createdAt=existing.createdAt}
+    if(id){const idx=notas.findIndex(x=>x.id===id);notas[idx]=data}else notas.push(data);
+    saveDoc('notas',data);closeModal();renderNotas();toast('Nota guardada','ok');
+}
+
+function editNota(id){openModal('notaModal',notas.find(x=>x.id===id))}
+function delNota(id){if(confirm('¿Eliminar nota?')){notas=notas.filter(x=>x.id!==id);deleteDoc('notas',id);renderNotas();toast('Nota eliminada','ok')}}
 
 // === EDIT ===
 function editTienda(id){openModal('tiendaModal',tiendas.find(x=>x.id===id))}
