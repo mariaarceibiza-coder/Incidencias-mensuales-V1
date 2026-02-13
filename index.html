@@ -89,10 +89,12 @@
                 <a class="nav-item" data-p="festivos">⭐ Festivos</a>
                 <a class="nav-item" data-p="nocturnidad">🌙 Nocturnidad</a>
                 <a class="nav-item" data-p="horasExtras">⏱️ Horas Extras</a>
+                <a class="nav-item" data-p="bonificaciones">🎯 Bonif. Asistencia</a>
             </div>
             <div class="nav-sec"><div class="nav-title">Config</div>
                 <a class="nav-item" data-p="empleados">👥 Empleados</a>
                 <a class="nav-item" data-p="tiendas">🏪 Tiendas</a>
+                <a class="nav-item" data-p="objetivosPage">🎯 Objetivos</a>
                 <a class="nav-item" data-p="exportar">📥 Exportar</a>
             </div>
         </nav>
@@ -133,27 +135,26 @@ let festivos=JSON.parse(localStorage.getItem('cr_festivos')||'[]');
 let nocturnidad=JSON.parse(localStorage.getItem('cr_nocturnidad')||'[]');
 let objetivos=JSON.parse(localStorage.getItem('cr_objetivos')||'[]');
 let horasExtras=JSON.parse(localStorage.getItem('cr_horasExtras')||'[]');
+let bonificaciones=JSON.parse(localStorage.getItem('cr_bonificaciones')||'[]');
 let currentUser=localStorage.getItem('cr_user')||'';
 
 if(!tiendas.length){
     tiendas=[
-        {id:uid(),nombre:'Ibiza',ubicacion:'Ibiza',obj1:20000,obj2:26000,estado:'activa'},
-        {id:uid(),nombre:'Lagasca',ubicacion:'Madrid',obj1:15000,obj2:19500,estado:'activa'},
-        {id:uid(),nombre:'Banús',ubicacion:'Marbella',obj1:18000,obj2:23400,estado:'activa'}
+        {id:uid(),nombre:'Ibiza',ubicacion:'Ibiza',estado:'activa'},
+        {id:uid(),nombre:'Lagasca',ubicacion:'Madrid',estado:'activa'},
+        {id:uid(),nombre:'Banús',ubicacion:'Marbella',estado:'activa'}
     ];
     save('tiendas');
 }
 
 function save(key){
-    const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras};
+    const data={tiendas,empleados,comisiones,dietas,domingos,festivos,nocturnidad,objetivos,horasExtras,bonificaciones};
     localStorage.setItem('cr_'+key,JSON.stringify(data[key]));
 }
 
 function getObjetivo(tiendaId,mes,year){
     const o=objetivos.find(x=>x.tiendaId===tiendaId&&x.mes==mes&&x.year==year);
-    if(o) return {obj1:o.obj1,obj2:o.obj2};
-    const t=tiendas.find(x=>x.id===tiendaId);
-    return t?{obj1:t.obj1,obj2:t.obj2}:{obj1:0,obj2:0};
+    return o?{obj1:o.obj1,obj2:o.obj2}:{obj1:0,obj2:0};
 }
 
 function isInternacional(tipo){return tipo==='inter_con'||tipo==='inter_sin'}
@@ -198,6 +199,7 @@ function renderPage(page){
                 <div class="stat"><div class="stat-label">Festivos</div><div class="stat-val" id="sF">0</div></div>
                 <div class="stat"><div class="stat-label">H. Nocturnas</div><div class="stat-val" id="sN">0h</div></div>
                 <div class="stat"><div class="stat-label">H. Extras</div><div class="stat-val" id="sHE">0h</div></div>
+                <div class="stat"><div class="stat-label">Bonif. Asist.</div><div class="stat-val" id="sBon">0€</div></div>
             </div>
             <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Dom.</th><th>Fest.</th><th>Noct.</th><th>H.Extra</th></tr></thead><tbody id="dashTb"></tbody></table></div></div>`,
 
@@ -229,13 +231,23 @@ function renderPage(page){
             <div class="filter-bar"><select class="form-select" id="heFEst" onchange="renderHorasExtras()"><option value="">Todos estados</option><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="disfrutado">Disfrutado</option></select></div>
             <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horas</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody id="heTb"></tbody></table></div></div>`,
 
+        bonificaciones:`
+            <div class="page-header"><div><h1 class="page-title">Bonificación por Asistencia</h1><p class="page-sub">Fijas discontinuas — 450€ por temporada (6 meses), proporcional a días trabajados</p></div><button class="btn btn-p" onclick="openModal('bonifModal')">+ Nueva</button></div>
+            <div class="filter-bar"><select class="form-select" id="bonFYear" onchange="renderBonificaciones()"><option value="">Todos</option>${yearOpts}</select></div>
+            <div class="card"><div class="card-body"><table><thead><tr><th>Año</th><th>Temporada</th><th>Empleado</th><th>Días trabajados</th><th>Días temporada</th><th>Faltas</th><th>Importe</th><th>Estado</th><th></th></tr></thead><tbody id="bonTb"></tbody></table></div></div>`,
+
         empleados:`
             <div class="page-header"><div><h1 class="page-title">Empleados</h1></div><button class="btn btn-p" onclick="openModal('empModal')">+ Nuevo</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Base</th><th>%Obj1</th><th>%Obj2</th><th>%Anual</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Obj1</th><th>%Obj2</th><th>%Anual</th><th>Contrato</th><th>Bonif.</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div>`,
 
         tiendas:`
             <div class="page-header"><div><h1 class="page-title">Tiendas</h1></div><button class="btn btn-p" onclick="openModal('tiendaModal')">+ Nueva</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Obj.1 base</th><th>Obj.2 base</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div>`,
+
+        objetivosPage:`
+            <div class="page-header"><div><h1 class="page-title">Objetivos Mensuales</h1><p class="page-sub">Cada mes tiene su propio objetivo por tienda</p></div><button class="btn btn-p" onclick="openModal('objModal',{})">+ Nuevo Objetivo</button></div>
+            <div class="filter-bar"><select class="form-select" id="objFTienda" onchange="renderObjetivosPage()"><option value="">Todas las tiendas</option>${tiendaOpts}</select><select class="form-select" id="objFYear" onchange="renderObjetivosPage()">${yearOpts}</select></div>
+            <div class="card"><div class="card-body"><table><thead><tr><th>Tienda</th><th>Mes</th><th>Año</th><th>Objetivo 1</th><th>Objetivo 2</th><th></th></tr></thead><tbody id="objPageTb"></tbody></table></div></div>`,
 
         exportar:`
             <div class="page-header"><div><h1 class="page-title">Exportar</h1><p class="page-sub">Genera Excel para gestoría</p></div></div>
@@ -250,8 +262,10 @@ function renderPage(page){
     if(page==='festivos')renderFestivos();
     if(page==='nocturnidad')renderNocturnidad();
     if(page==='horasExtras')renderHorasExtras();
+    if(page==='bonificaciones')renderBonificaciones();
     if(page==='empleados')renderEmpleados();
     if(page==='tiendas')renderTiendas();
+    if(page==='objetivosPage')renderObjetivosPage();
     if(page==='exportar'){$('expMes').value=now.getMonth()+1;$('expYear').value=now.getFullYear()}
 }
 
@@ -276,6 +290,9 @@ function updateDash(){
     $('sF').textContent=fF.length;
     $('sN').textContent=nF.reduce((s,n)=>s+(n.s1||0)+(n.s2||0)+(n.s3||0)+(n.s4||0)+(n.s5||0),0)+'h';
     $('sHE').textContent=hF.reduce((s,h)=>s+(h.horas||0),0)+'h';
+
+    const bonF=bonificaciones.filter(b=>(!year||b.year==year)&&fe(b.empId));
+    $('sBon').textContent=fmt(bonF.reduce((s,b)=>s+(b.importe||0),0));
 
     // Comision anual
     const yForAnual=year||new Date().getFullYear();
@@ -368,16 +385,26 @@ function renderHorasExtras(){
 function renderEmpleados(){
     $('empTb').innerHTML=empleados.length?empleados.map(e=>{
         const t=tiendas.find(x=>x.id===e.tiendaId);
-        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.pctBase||0}%</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td>${e.pctAnual||0}%</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="8" class="empty"><h3>Sin empleados</h3><p>Añade empleados para registrar incidencias</p></td></tr>';
+        const tipoLabel={'indefinido':'Indef.','fija_discontinua':'Fija disc.','temporal':'Temporal'};
+        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td>${e.pctAnual||0}%</td><td>${tipoLabel[e.tipoContrato]||'Indef.'}</td><td>${e.bonifAsistencia==='si'?'<span class="badge badge-ok">Sí</span>':'—'}</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin empleados</h3><p>Añade empleados para registrar incidencias</p></td></tr>';
 }
 
 function renderTiendas(){
     $('tiendaTb').innerHTML=tiendas.map(t=>{
-        const objs=objetivos.filter(o=>o.tiendaId===t.id).sort((a,b)=>b.year-a.year||b.mes-a.mes);
-        const objRows=objs.length?`<tr><td colspan="6"><table class="obj-table"><thead><tr><th>Mes</th><th>Año</th><th>Obj.1</th><th>Obj.2</th><th></th></tr></thead><tbody>${objs.map(o=>`<tr><td>${MESES[o.mes]}</td><td>${o.year}</td><td>${fmt(o.obj1)}</td><td>${fmt(o.obj2)}</td><td><button class="act-btn del" onclick="delObj('${o.id}')">🗑️</button></td></tr>`).join('')}</tbody></table></td></tr>`:'';
-        return `<tr><td><b>${t.nombre}</b></td><td>${t.ubicacion||'-'}</td><td>${fmt(t.obj1)}</td><td>${fmt(t.obj2)}</td><td><span class="badge ${t.estado==='activa'?'badge-ok':'badge-err'}">${t.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="openModal('objModal',{tiendaId:'${t.id}'})">🎯</button><button class="act-btn" onclick="editTienda('${t.id}')">✏️</button><button class="act-btn del" onclick="delTienda('${t.id}')">🗑️</button></div></td></tr>${objRows}`;
+        return `<tr><td><b>${t.nombre}</b></td><td>${t.ubicacion||'-'}</td><td><span class="badge ${t.estado==='activa'?'badge-ok':'badge-err'}">${t.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editTienda('${t.id}')">✏️</button><button class="act-btn del" onclick="delTienda('${t.id}')">🗑️</button></div></td></tr>`;
     }).join('');
+}
+
+function renderObjetivosPage(){
+    const fTienda=$('objFTienda')?.value,fYear=$('objFYear')?.value;
+    let f=objetivos.slice().sort((a,b)=>b.year-a.year||b.mes-a.mes);
+    if(fTienda)f=f.filter(o=>o.tiendaId===fTienda);
+    if(fYear)f=f.filter(o=>o.year==fYear);
+    $('objPageTb').innerHTML=f.length?f.map(o=>{
+        const t=tiendas.find(x=>x.id===o.tiendaId);
+        return `<tr><td><b>${t?.nombre||'-'}</b></td><td>${MESES[o.mes]}</td><td>${o.year}</td><td>${fmt(o.obj1)}</td><td>${fmt(o.obj2)}</td><td><div class="actions"><button class="act-btn" onclick="editObj('${o.id}')">✏️</button><button class="act-btn del" onclick="delObj('${o.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="6" class="empty"><h3>Sin objetivos</h3><p>Añade objetivos mensuales para cada tienda</p></td></tr>';
 }
 
 // === QUICK STATE CHANGE ===
@@ -408,13 +435,12 @@ function openModal(type,data={}){
             <form onsubmit="saveTienda(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-group"><label>Nombre</label><input class="form-input" id="mTNombre" value="${data.nombre||''}" required></div>
             <div class="form-group"><label>Ubicación</label><input class="form-input" id="mTUbi" value="${data.ubicacion||''}"></div>
-            <div class="form-row"><div class="form-group"><label>Objetivo 1 base (€)</label><input type="number" class="form-input" id="mTObj1" value="${data.obj1||0}" step="0.01" required></div>
-            <div class="form-group"><label>Objetivo 2 base (€)</label><input type="number" class="form-input" id="mTObj2" value="${data.obj2||0}" step="0.01" required></div></div>
             <div class="form-group"><label>Estado</label><select class="form-select" id="mTEstado"><option value="activa"${data.estado==='activa'?' selected':''}>Activa</option><option value="inactiva"${data.estado==='inactiva'?' selected':''}>Inactiva</option></select></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
 
-        objModal:`<div class="modal-header"><h3 class="modal-title">Objetivo Mensual</h3><button class="modal-close" onclick="closeModal()">×</button></div>
-            <form onsubmit="saveObj(event,'${data.tiendaId||''}')"><div class="modal-body">
+        objModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nuevo'} Objetivo Mensual</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <form onsubmit="saveObj(event,'${data.id||''}')"><div class="modal-body">
+            <div class="form-group"><label>Tienda</label><select class="form-select" id="mOTienda" required>${tiendas.filter(t=>t.estado==='activa').map(t=>`<option value="${t.id}"${data.tiendaId===t.id?' selected':''}>${t.nombre}</option>`).join('')}</select></div>
             <div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="mOMes">${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="mOYear">${yearOpts}</select></div></div>
             <div class="form-row"><div class="form-group"><label>Objetivo 1 (€)</label><input type="number" class="form-input" id="mOObj1" value="${data.obj1||0}" step="0.01" required></div>
             <div class="form-group"><label>Objetivo 2 (€)</label><input type="number" class="form-input" id="mOObj2" value="${data.obj2||0}" step="0.01" required></div></div>
@@ -424,11 +450,12 @@ function openModal(type,data={}){
             <form onsubmit="saveEmp(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-group"><label>Nombre</label><input class="form-input" id="mENombre" value="${data.nombre||''}" required></div>
             <div class="form-group"><label>Tienda</label><select class="form-select" id="mETienda" required>${tiendaOpts}</select></div>
-            <div class="form-row"><div class="form-group"><label>% Base (sin objetivo)</label><input type="number" class="form-input" id="mEBase" value="${data.pctBase||0}" step="0.001" required></div>
-            <div class="form-group"><label>% Comisión Obj.1</label><input type="number" class="form-input" id="mEObj1" value="${data.obj1||0.2}" step="0.001" required></div></div>
-            <div class="form-row"><div class="form-group"><label>% Comisión Obj.2</label><input type="number" class="form-input" id="mEObj2" value="${data.obj2||0.25}" step="0.001" required></div>
-            <div class="form-group"><label>% Comisión Anual</label><input type="number" class="form-input" id="mEAnual" value="${data.pctAnual||0}" step="0.001" required></div></div>
-            <div class="form-group"><label>Estado</label><select class="form-select" id="mEEstado"><option value="activo"${data.estado==='activo'?' selected':''}>Activo</option><option value="baja"${data.estado==='baja'?' selected':''}>Baja</option></select></div>
+            <div class="form-row"><div class="form-group"><label>% Comisión Obj.1</label><input type="number" class="form-input" id="mEObj1" value="${data.obj1||0.2}" step="0.001" required><small style="color:var(--txt2)">Se aplica siempre</small></div>
+            <div class="form-group"><label>% Comisión Obj.2</label><input type="number" class="form-input" id="mEObj2" value="${data.obj2||0.25}" step="0.001" required><small style="color:var(--txt2)">Solo si alcanza objetivo</small></div></div>
+            <div class="form-row"><div class="form-group"><label>% Comisión Anual</label><input type="number" class="form-input" id="mEAnual" value="${data.pctAnual||0}" step="0.001" required><small style="color:var(--txt2)">Sobre ventas anuales</small></div>
+            <div class="form-group"><label>Tipo contrato</label><select class="form-select" id="mETipo"><option value="indefinido"${data.tipoContrato==='indefinido'||!data.tipoContrato?' selected':''}>Indefinido</option><option value="fija_discontinua"${data.tipoContrato==='fija_discontinua'?' selected':''}>Fija discontinua</option><option value="temporal"${data.tipoContrato==='temporal'?' selected':''}>Temporal</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label>Estado</label><select class="form-select" id="mEEstado"><option value="activo"${data.estado==='activo'?' selected':''}>Activo</option><option value="baja"${data.estado==='baja'?' selected':''}>Baja</option></select></div>
+            <div class="form-group"><label>Bonif. asistencia</label><select class="form-select" id="mEBonif"><option value="no"${data.bonifAsistencia!=='si'?' selected':''}>No aplica</option><option value="si"${data.bonifAsistencia==='si'?' selected':''}>Sí (450€/temporada)</option></select><small style="color:var(--txt2)">Solo fijas discontinuas</small></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
 
         comisionModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Comisión</h3><button class="modal-close" onclick="closeModal()">×</button></div>
@@ -475,7 +502,17 @@ function openModal(type,data={}){
             <div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" class="form-input" id="mHFecha" value="${data.fecha||''}" required></div><div class="form-group"><label>Empleado</label><select class="form-select" id="mHEmp" required>${empOpts}</select></div></div>
             <div class="form-row"><div class="form-group"><label>Horas</label><input type="number" class="form-input" id="mHHoras" value="${data.horas||0}" step="0.5" min="0.5" required></div><div class="form-group"><label>Estado</label><select class="form-select" id="mHEstado"><option value="pendiente"${data.estado==='pendiente'||!data.estado?' selected':''}>Pendiente</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option><option value="disfrutado"${data.estado==='disfrutado'?' selected':''}>Disfrutado</option></select></div></div>
             <div class="form-group"><label>Motivo</label><input class="form-input" id="mHMotivo" value="${data.motivo||''}" required></div>
-            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
+
+        bonifModal:(()=>{const bEmpOpts=empleados.filter(e=>e.estado==='activo'&&e.bonifAsistencia==='si').map(e=>`<option value="${e.id}"${data.empId===e.id?' selected':''}>${e.nombre}</option>`).join('');return `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Bonificación Asistencia</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <form onsubmit="saveBonif(event,'${data.id||''}')"><div class="modal-body">
+            <div class="form-row"><div class="form-group"><label>Año</label><select class="form-select" id="mBYear">${yearOpts}</select></div><div class="form-group"><label>Temporada</label><select class="form-select" id="mBTemp"><option value="verano"${data.temporada==='verano'||!data.temporada?' selected':''}>Verano (abr-sep)</option><option value="invierno"${data.temporada==='invierno'?' selected':''}>Invierno (oct-mar)</option></select></div></div>
+            <div class="form-group"><label>Empleado (fija discontinua)</label><select class="form-select" id="mBEmp" required>${bEmpOpts||'<option value="">— Sin empleados con bonif. —</option>'}</select></div>
+            <div class="form-row"><div class="form-group"><label>Días trabajados</label><input type="number" class="form-input" id="mBDias" value="${data.diasTrabajados||0}" min="0" required oninput="calcBonif()"></div><div class="form-group"><label>Días temporada (total)</label><input type="number" class="form-input" id="mBDiasTemp" value="${data.diasTemporada||182}" min="1" required oninput="calcBonif()"></div></div>
+            <div class="form-group"><label>Faltas (días no trabajados sin justificar)</label><input type="number" class="form-input" id="mBFaltas" value="${data.faltas||0}" min="0" oninput="calcBonif()"></div>
+            <div class="form-group"><label>Estado</label><select class="form-select" id="mBEstado"><option value="pendiente"${data.estado==='pendiente'||!data.estado?' selected':''}>Pendiente</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option></select></div>
+            <div class="calc-box"><div class="calc-row"><span class="calc-label">Base temporada:</span><span class="calc-val">450€</span></div><div class="calc-row"><span class="calc-label">Proporcional (días):</span><span class="calc-val" id="mBCalc">0€</span></div><div class="calc-row"><span class="calc-label">Faltas descuento:</span><span class="calc-val" id="mBDescCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mBTotCalc">0€</span></div></div>
+            </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`;})()
     };
 
     let overlay=document.querySelector('.modal-bg');
@@ -484,6 +521,7 @@ function openModal(type,data={}){
     overlay.classList.add('active');
     if(type==='comisionModal')setTimeout(calcCom,0);
     if(type==='dietaModal')setTimeout(calcDiet,0);
+    if(type==='bonifModal')setTimeout(calcBonif,0);
 }
 function closeModal(){document.querySelector('.modal-bg')?.classList.remove('active')}
 
@@ -495,10 +533,10 @@ function calcCom(){
     if(!emp||!tienda){$('mCObjCalc').textContent='Selecciona empleado y tienda';$('mCComCalc').textContent='0€';return}
     const neto=ventas+ajustes;
     const {obj1,obj2}=getObjetivo(tiendaId,mes,year);
-    let objLvl=0,pct=emp.pctBase||0;
-    if(neto>=obj2){objLvl=2;pct=emp.obj2}else if(neto>=obj1){objLvl=1;pct=emp.obj1}
+    let objLvl=1,pct=emp.obj1;
+    if(neto>=obj2){objLvl=2;pct=emp.obj2}
     const com=Math.max(0,neto*(pct/100));
-    $('mCObjCalc').textContent=objLvl?`Objetivo ${objLvl} (${pct}%)`:`Base (${pct}%) — Obj1: ${fmt(obj1)}`;
+    $('mCObjCalc').textContent=objLvl===2?`Objetivo 2 (${pct}%)`:`Obj.1 (${pct}%) — Obj2: ${fmt(obj2)}`;
     $('mCComCalc').textContent=fmt(com);
 }
 
@@ -512,26 +550,52 @@ function calcDiet(){
     $('mDTotCalc').textContent=fmt(importe+inc);
 }
 
+function calcBonif(){
+    const dias=+($('mBDias')?.value||0),diasTemp=+($('mBDiasTemp')?.value||182),faltas=+($('mBFaltas')?.value||0);
+    const proporcional=diasTemp>0?Math.round((450*dias/diasTemp)*100)/100:0;
+    const descuento=diasTemp>0?Math.round((450*faltas/diasTemp)*100)/100:0;
+    const total=Math.max(0,proporcional-descuento);
+    $('mBCalc').textContent=fmt(proporcional);
+    $('mBDescCalc').textContent=fmt(descuento);
+    $('mBTotCalc').textContent=fmt(total);
+}
+
+function renderBonificaciones(){
+    const fYear=$('bonFYear')?.value;
+    let f=bonificaciones;
+    if(fYear)f=f.filter(b=>b.year==fYear);
+    $('bonTb').innerHTML=f.length?f.map(b=>{
+        const e=empleados.find(x=>x.id===b.empId);
+        return `<tr><td>${b.year}</td><td>${b.temporada==='verano'?'Verano (abr-sep)':'Invierno (oct-mar)'}</td><td><b>${e?.nombre||'-'}</b></td><td>${b.diasTrabajados}</td><td>${b.diasTemporada}</td><td>${b.faltas||0}</td><td><b style="color:var(--ok)">${fmt(b.importe)}</b></td><td><span class="badge click ${b.estado==='pagado'?'badge-ok':'badge-warn'}" onclick="cycleBonifEstado('${b.id}')">${b.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editBonif('${b.id}')">✏️</button><button class="act-btn del" onclick="delBonif('${b.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin registros</h3><p>Añade bonificaciones para empleadas fijas discontinuas</p></td></tr>';
+}
+
+function cycleBonifEstado(id){
+    const b=bonificaciones.find(x=>x.id===id);if(!b)return;
+    b.estado=b.estado==='pendiente'?'pagado':'pendiente';
+    save('bonificaciones');renderBonificaciones();toast('Estado actualizado','ok');
+}
+
 // === SAVE FUNCTIONS ===
 function saveTienda(e,id){
     e.preventDefault();
-    const data={id:id||uid(),nombre:$('mTNombre').value,ubicacion:$('mTUbi').value,obj1:+$('mTObj1').value,obj2:+$('mTObj2').value,estado:$('mTEstado').value};
+    const data={id:id||uid(),nombre:$('mTNombre').value,ubicacion:$('mTUbi').value,estado:$('mTEstado').value};
     if(id){const idx=tiendas.findIndex(t=>t.id===id);tiendas[idx]=data}else tiendas.push(data);
     save('tiendas');closeModal();renderTiendas();toast('Tienda guardada','ok');
 }
 
-function saveObj(e,tiendaId){
+function saveObj(e,id){
     e.preventDefault();
-    const mes=+$('mOMes').value,year=+$('mOYear').value;
-    const existing=objetivos.findIndex(o=>o.tiendaId===tiendaId&&o.mes===mes&&o.year===year);
+    const tiendaId=$('mOTienda').value,mes=+$('mOMes').value,year=+$('mOYear').value;
+    const existing=id?objetivos.findIndex(o=>o.id===id):objetivos.findIndex(o=>o.tiendaId===tiendaId&&o.mes===mes&&o.year===year);
     const data={id:existing>=0?objetivos[existing].id:uid(),tiendaId,mes,year,obj1:+$('mOObj1').value,obj2:+$('mOObj2').value};
     if(existing>=0)objetivos[existing]=data;else objetivos.push(data);
-    save('objetivos');closeModal();renderTiendas();toast('Objetivo guardado','ok');
+    save('objetivos');closeModal();if($('objPageTb'))renderObjetivosPage();toast('Objetivo guardado','ok');
 }
 
 function saveEmp(e,id){
     e.preventDefault();
-    const data={id:id||uid(),nombre:$('mENombre').value,tiendaId:$('mETienda').value,pctBase:+$('mEBase').value,obj1:+$('mEObj1').value,obj2:+$('mEObj2').value,pctAnual:+$('mEAnual').value,estado:$('mEEstado').value};
+    const data={id:id||uid(),nombre:$('mENombre').value,tiendaId:$('mETienda').value,obj1:+$('mEObj1').value,obj2:+$('mEObj2').value,pctAnual:+$('mEAnual').value,tipoContrato:$('mETipo').value,bonifAsistencia:$('mEBonif').value,estado:$('mEEstado').value};
     if(id){const idx=empleados.findIndex(x=>x.id===id);empleados[idx]=data}else empleados.push(data);
     save('empleados');closeModal();renderEmpleados();toast('Empleado guardado','ok');
 }
@@ -543,8 +607,8 @@ function saveCom(e,id){
     const mes=+$('mCMes').value,year=+$('mCYear').value;
     const neto=ventas+ajustes;
     const {obj1,obj2}=getObjetivo(tiendaId,mes,year);
-    let objLvl=0,pct=emp.pctBase||0;
-    if(neto>=obj2){objLvl=2;pct=emp.obj2}else if(neto>=obj1){objLvl=1;pct=emp.obj1}
+    let objLvl=1,pct=emp.obj1;
+    if(neto>=obj2){objLvl=2;pct=emp.obj2}
     const data={id:id||uid(),mes,year,tiendaId,empId,ventas,ajustes,obj:objLvl,pct,comision:Math.max(0,neto*(pct/100))};
     if(id){const idx=comisiones.findIndex(x=>x.id===id);comisiones[idx]=data}else comisiones.push(data);
     save('comisiones');closeModal();renderComisiones();updateDash();toast('Comisión guardada','ok');
@@ -586,6 +650,17 @@ function saveHExtra(e,id){
     save('horasExtras');closeModal();renderHorasExtras();updateDash();toast('Hora extra guardada','ok');
 }
 
+function saveBonif(e,id){
+    e.preventDefault();
+    const dias=+$('mBDias').value,diasTemp=+$('mBDiasTemp').value,faltas=+$('mBFaltas').value;
+    const proporcional=diasTemp>0?Math.round((450*dias/diasTemp)*100)/100:0;
+    const descuento=diasTemp>0?Math.round((450*faltas/diasTemp)*100)/100:0;
+    const importe=Math.max(0,proporcional-descuento);
+    const data={id:id||uid(),year:+$('mBYear').value,temporada:$('mBTemp').value,empId:$('mBEmp').value,diasTrabajados:dias,diasTemporada:diasTemp,faltas,importe,estado:$('mBEstado').value};
+    if(id){const idx=bonificaciones.findIndex(x=>x.id===id);bonificaciones[idx]=data}else bonificaciones.push(data);
+    save('bonificaciones');closeModal();renderBonificaciones();toast('Bonificación guardada','ok');
+}
+
 // === EDIT ===
 function editTienda(id){openModal('tiendaModal',tiendas.find(x=>x.id===id))}
 function editEmp(id){openModal('empModal',empleados.find(x=>x.id===id))}
@@ -595,6 +670,8 @@ function editDom(id){openModal('domModal',domingos.find(x=>x.id===id))}
 function editFest(id){openModal('festModal',festivos.find(x=>x.id===id))}
 function editNoct(id){openModal('noctModal',nocturnidad.find(x=>x.id===id))}
 function editHExtra(id){openModal('hExtraModal',horasExtras.find(x=>x.id===id))}
+function editBonif(id){openModal('bonifModal',bonificaciones.find(x=>x.id===id))}
+function editObj(id){openModal('objModal',objetivos.find(x=>x.id===id))}
 
 // === DELETE ===
 function delTienda(id){if(confirm('¿Eliminar?')){tiendas=tiendas.filter(x=>x.id!==id);save('tiendas');renderTiendas();toast('Eliminado','ok')}}
@@ -604,8 +681,9 @@ function delDiet(id){if(confirm('¿Eliminar?')){dietas=dietas.filter(x=>x.id!==i
 function delDom(id){if(confirm('¿Eliminar?')){domingos=domingos.filter(x=>x.id!==id);save('domingos');renderDomingos();updateDash();toast('Eliminado','ok')}}
 function delFest(id){if(confirm('¿Eliminar?')){festivos=festivos.filter(x=>x.id!==id);save('festivos');renderFestivos();updateDash();toast('Eliminado','ok')}}
 function delNoct(id){if(confirm('¿Eliminar?')){nocturnidad=nocturnidad.filter(x=>x.id!==id);save('nocturnidad');renderNocturnidad();updateDash();toast('Eliminado','ok')}}
-function delObj(id){if(confirm('¿Eliminar?')){objetivos=objetivos.filter(x=>x.id!==id);save('objetivos');renderTiendas();toast('Eliminado','ok')}}
+function delObj(id){if(confirm('¿Eliminar?')){objetivos=objetivos.filter(x=>x.id!==id);save('objetivos');if($('objPageTb'))renderObjetivosPage();toast('Eliminado','ok')}}
 function delHExtra(id){if(confirm('¿Eliminar?')){horasExtras=horasExtras.filter(x=>x.id!==id);save('horasExtras');renderHorasExtras();updateDash();toast('Eliminado','ok')}}
+function delBonif(id){if(confirm('¿Eliminar?')){bonificaciones=bonificaciones.filter(x=>x.id!==id);save('bonificaciones');renderBonificaciones();toast('Eliminado','ok')}}
 
 // === EXPORT ===
 function exportExcel(){
@@ -645,6 +723,11 @@ function exportExcel(){
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'HorasExtras');
     }
 
+    const bF=bonificaciones.filter(b=>b.year==year);
+    if(bF.length){
+        const data=bF.map(b=>({Año:b.year,Temporada:b.temporada,Empleado:empleados.find(e=>e.id===b.empId)?.nombre,DíasTrabajados:b.diasTrabajados,DíasTemporada:b.diasTemporada,Faltas:b.faltas,Importe:b.importe,Estado:b.estado}));
+        XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Bonificaciones');
+    }
     if(!wb.SheetNames.length){toast('No hay datos para este periodo','err');return}
     XLSX.writeFile(wb,`Incidencias_${mes?MESES[mes]:'Anual'}_${year}.xlsx`);
     toast('Excel exportado','ok');
