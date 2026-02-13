@@ -58,6 +58,37 @@
         .mob-btn{display:none;position:fixed;top:16px;left:16px;z-index:101;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);cursor:pointer}
         .local-badge{background:#E3F2FD;color:var(--info);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;margin-left:8px}
         .obj-table{width:100%;margin-top:12px}.obj-table td,.obj-table th{padding:6px 8px;font-size:12px}
+        .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        @media(max-width:768px){
+            .main{padding:16px}
+            .page-title{font-size:24px}
+            .stat-val{font-size:22px}
+            .stats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+            .stat{padding:14px}
+            .form-row{grid-template-columns:1fr}
+            .filter-bar{flex-direction:column}.filter-bar .form-select{width:100%;min-width:unset}
+            .page-header{flex-direction:column;align-items:flex-start;gap:12px}
+            .card-header{flex-direction:column;align-items:flex-start;gap:8px}
+            .modal{max-width:95vw;margin:8px}.modal-header,.modal-body,.modal-footer{padding:16px}
+            .auth-box{padding:28px 20px}
+            .toast-box{right:12px;left:12px;bottom:12px}.toast{font-size:13px}
+            .calc-box{padding:12px}
+            .btn{padding:10px 16px;font-size:13px}
+        }
+        @media(max-width:480px){
+            .main{padding:12px 8px}
+            .page-title{font-size:20px}
+            .stat-val{font-size:18px}
+            .stats{grid-template-columns:1fr 1fr;gap:8px}
+            .stat{padding:10px}.stat-label{font-size:10px}
+            .card-body{padding:12px}
+            th{padding:8px 6px;font-size:9px}td{padding:8px 6px;font-size:12px}
+            .mob-btn{top:8px;left:8px;padding:10px}
+            .sb-header{padding:16px}.sb-logo{font-size:18px}
+            .nav-item{padding:8px 10px;font-size:13px}
+            .auth-box{padding:20px 16px;border-radius:12px}.auth-logo{font-size:22px}
+            .modal{border-radius:12px}
+        }
     </style>
 </head>
 <body>
@@ -326,58 +357,58 @@ function renderPage(page){
                 <div class="stat"><div class="stat-label">H. Extras</div><div class="stat-val" id="sHE">0h</div></div>
                 <div class="stat"><div class="stat-label">Bonif. Asist.</div><div class="stat-val" id="sBon">0€</div></div>
             </div>
-            <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Dom.</th><th>Fest.</th><th>Noct.</th><th>H.Extra</th></tr></thead><tbody id="dashTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-header"><h2 class="card-title">Por Empleado</h2></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>Comisión</th><th>Dietas</th><th>Dom.</th><th>Fest.</th><th>Noct.</th><th>H.Extra</th></tr></thead><tbody id="dashTb"></tbody></table></div></div></div>`,
 
         comisiones:`
             <div class="page-header"><div><h1 class="page-title">Comisiones</h1></div><button class="btn btn-p" onclick="openModal('comisionModal')">+ Nueva</button></div>
             <div class="filter-bar"><select class="form-select" id="cFMes" onchange="renderComisiones()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="cFYear" onchange="renderComisiones()"><option value="">Todos</option>${yearOpts}</select><select class="form-select" id="cFTienda" onchange="renderComisiones()"><option value="">Todas</option>${tiendaOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Mes</th><th>Tienda</th><th>Empleado</th><th>Ventas</th><th>Objetivo</th><th>Ajustes</th><th>Comisión</th><th></th></tr></thead><tbody id="comTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Mes</th><th>Tienda</th><th>Empleado</th><th>Ventas</th><th>Objetivo</th><th>Ajustes</th><th>Comisión</th><th></th></tr></thead><tbody id="comTb"></tbody></table></div></div></div>`,
 
         comisionesAnuales:`
             <div class="page-header"><div><h1 class="page-title">Comisiones Anuales</h1><p class="page-sub">Acumulado por empleado — Se pierde si se va sin completar contrato o sin preaviso de 15 días</p></div></div>
             <div class="filter-bar"><select class="form-select" id="caFYear" onchange="renderComisionesAnuales()">${yearOpts}</select><select class="form-select" id="caFTienda" onchange="renderComisionesAnuales()"><option value="">Todas las tiendas</option>${tiendaOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>% Anual</th><th>Ventas acumuladas</th><th>Comisión anual</th><th>Estado</th><th></th></tr></thead><tbody id="caAnualTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Empleado</th><th>Tienda</th><th>% Anual</th><th>Ventas acumuladas</th><th>Comisión anual</th><th>Estado</th><th></th></tr></thead><tbody id="caAnualTb"></tbody></table></div></div></div>`,
 
         dietas:`
             <div class="page-header"><div><h1 class="page-title">Dietas</h1></div><button class="btn btn-p" onclick="openModal('dietaModal')">+ Nueva</button></div>
             <div class="filter-bar"><select class="form-select" id="dietFMes" onchange="renderDietas()"><option value="">Todos</option>${mesOpts}</select><select class="form-select" id="dietFEstado" onchange="renderDietas()"><option value="">Todos estados</option><option value="pte_pago">Pte. de pago</option><option value="pagado_pte_incentivo">Pagado pte. incentivo</option><option value="pagado">Pagado</option></select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>F. Viaje</th><th>F. Pago</th><th>Empleado</th><th>Tipo</th><th>Días</th><th>Dieta</th><th>Incentivo</th><th>Estado</th><th></th></tr></thead><tbody id="dietTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>F. Viaje</th><th>F. Pago</th><th>Empleado</th><th>Tipo</th><th>Días</th><th>Dieta</th><th>Incentivo</th><th>Estado</th><th></th></tr></thead><tbody id="dietTb"></tbody></table></div></div></div>`,
 
         domingos:`
             <div class="page-header"><div><h1 class="page-title">Domingos</h1></div><button class="btn btn-p" onclick="openModal('domModal')">+ Nuevo</button></div>
             <div class="filter-bar"><select class="form-select" id="domFMes" onchange="renderDomingos()"><option value="">Todos</option>${mesOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Empleado</th><th>Autorizado</th><th></th></tr></thead><tbody id="domTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Empleado</th><th>Autorizado</th><th></th></tr></thead><tbody id="domTb"></tbody></table></div></div></div>`,
 
         festivos:`
             <div class="page-header"><div><h1 class="page-title">Festivos</h1></div><button class="btn btn-p" onclick="openModal('festModal')">+ Nuevo</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Festivo</th><th>Tienda</th><th>Empleado</th><th></th></tr></thead><tbody id="festTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Festivo</th><th>Tienda</th><th>Empleado</th><th></th></tr></thead><tbody id="festTb"></tbody></table></div></div></div>`,
 
         nocturnidad:`
             <div class="page-header"><div><h1 class="page-title">Nocturnidad</h1></div><button class="btn btn-p" onclick="openModal('noctModal')">+ Nuevo</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Mes</th><th>Empleado</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>Total</th><th></th></tr></thead><tbody id="noctTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Mes</th><th>Empleado</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>Total</th><th></th></tr></thead><tbody id="noctTb"></tbody></table></div></div></div>`,
 
         horasExtras:`
             <div class="page-header"><div><h1 class="page-title">Horas Extras</h1></div><button class="btn btn-p" onclick="openModal('hExtraModal')">+ Nueva</button></div>
             <div class="filter-bar"><select class="form-select" id="heFEst" onchange="renderHorasExtras()"><option value="">Todos estados</option><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="disfrutado">Disfrutado</option></select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horas</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody id="heTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horas</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody id="heTb"></tbody></table></div></div></div>`,
 
         bonificaciones:`
             <div class="page-header"><div><h1 class="page-title">Bonificación por Asistencia</h1><p class="page-sub">Ordinario (${fmt(ajustes.bonifOrdinario)}) / Discontinuo (${fmt(ajustes.bonifDiscontinuo)}) por temporada, proporcional a días trabajados</p></div><button class="btn btn-p" onclick="openModal('bonifModal')">+ Nueva</button></div>
             <div class="filter-bar"><select class="form-select" id="bonFYear" onchange="renderBonificaciones()"><option value="">Todos</option>${yearOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Año</th><th>Temporada</th><th>Empleado</th><th>Tipo</th><th>Días trab.</th><th>Días temp.</th><th>Faltas</th><th>Importe</th><th>Estado</th><th></th></tr></thead><tbody id="bonTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Año</th><th>Temporada</th><th>Empleado</th><th>Tipo</th><th>Días trab.</th><th>Días temp.</th><th>Faltas</th><th>Importe</th><th>Estado</th><th></th></tr></thead><tbody id="bonTb"></tbody></table></div></div></div>`,
 
         empleados:`
             <div class="page-header"><div><h1 class="page-title">Empleados</h1></div><button class="btn btn-p" onclick="openModal('empModal')">+ Nuevo</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Obj1</th><th>%Obj2</th><th>%Anual</th><th>Contrato</th><th>Bonif.</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Tienda</th><th>%Obj1</th><th>%Obj2</th><th>%Anual</th><th>Contrato</th><th>Bonif.</th><th>Estado</th><th></th></tr></thead><tbody id="empTb"></tbody></table></div></div></div>`,
 
         tiendas:`
             <div class="page-header"><div><h1 class="page-title">Tiendas</h1></div><button class="btn btn-p" onclick="openModal('tiendaModal')">+ Nueva</button></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Ubicación</th><th>Estado</th><th></th></tr></thead><tbody id="tiendaTb"></tbody></table></div></div></div>`,
 
         objetivosPage:`
             <div class="page-header"><div><h1 class="page-title">Objetivos Mensuales</h1><p class="page-sub">Cada mes tiene su propio objetivo por tienda</p></div><button class="btn btn-p" onclick="openModal('objModal',{})">+ Nuevo Objetivo</button></div>
             <div class="filter-bar"><select class="form-select" id="objFTienda" onchange="renderObjetivosPage()"><option value="">Todas las tiendas</option>${tiendaOpts}</select><select class="form-select" id="objFYear" onchange="renderObjetivosPage()">${yearOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Tienda</th><th>Mes</th><th>Año</th><th>Objetivo 1</th><th>Objetivo 2</th><th></th></tr></thead><tbody id="objPageTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Tienda</th><th>Mes</th><th>Año</th><th>Objetivo 1</th><th>Objetivo 2</th><th></th></tr></thead><tbody id="objPageTb"></tbody></table></div></div></div>`,
 
         exportar:`
             <div class="page-header"><div><h1 class="page-title">Exportar</h1><p class="page-sub">Genera Excel para gestoría</p></div></div>
