@@ -224,7 +224,7 @@ async function loadAllData(){
     horasExtras=dataMap.horasExtras;
     bonificaciones=dataMap.bonificaciones;
 
-    try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes=ajustesDoc.data()}catch(e){console.error('Error loading ajustes',e)}
+    try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes={...ajustes,...ajustesDoc.data()}}catch(e){console.error('Error loading ajustes',e)}
 
     if(!tiendas.length){
         tiendas=[
