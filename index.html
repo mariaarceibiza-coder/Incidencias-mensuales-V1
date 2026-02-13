@@ -122,6 +122,7 @@
                 <a class="nav-item" data-p="empleados">👥 Empleados</a>
                 <a class="nav-item" data-p="tiendas">🏪 Tiendas</a>
                 <a class="nav-item" data-p="objetivosPage">🎯 Objetivos</a>
+                <a class="nav-item" data-p="ajustesPage">⚙️ Ajustes</a>
                 <a class="nav-item" data-p="exportar">📥 Exportar</a>
             </div>
         </nav>
@@ -176,6 +177,7 @@ let nocturnidad=[];
 let objetivos=[];
 let horasExtras=[];
 let bonificaciones=[];
+let ajustes={bonifOrdinario:450,bonifDiscontinuo:450};
 let currentUser=null;
 
 const COLLECTIONS=['tiendas','empleados','comisiones','dietas','domingos','festivos','nocturnidad','objetivos','horasExtras','bonificaciones'];
@@ -199,6 +201,10 @@ function deleteDoc(key,id){
     db.collection(key).doc(id).delete().catch(err=>console.error('Error eliminando doc',err));
 }
 
+function saveAjustes(){
+    db.collection('ajustes').doc('config').set(ajustes).catch(err=>console.error('Error saving ajustes',err));
+}
+
 async function loadAllData(){
     const promises=COLLECTIONS.map(col=>db.collection(col).get());
     const snapshots=await Promise.all(promises);
@@ -217,6 +223,8 @@ async function loadAllData(){
     objetivos=dataMap.objetivos;
     horasExtras=dataMap.horasExtras;
     bonificaciones=dataMap.bonificaciones;
+
+    try{const ajustesDoc=await db.collection('ajustes').doc('config').get();if(ajustesDoc.exists)ajustes=ajustesDoc.data()}catch(e){console.error('Error loading ajustes',e)}
 
     if(!tiendas.length){
         tiendas=[
@@ -354,9 +362,9 @@ function renderPage(page){
             <div class="card"><div class="card-body"><table><thead><tr><th>Fecha</th><th>Empleado</th><th>Horas</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody id="heTb"></tbody></table></div></div>`,
 
         bonificaciones:`
-            <div class="page-header"><div><h1 class="page-title">Bonificación por Asistencia</h1><p class="page-sub">Fijas discontinuas — 450€ por temporada (6 meses), proporcional a días trabajados</p></div><button class="btn btn-p" onclick="openModal('bonifModal')">+ Nueva</button></div>
+            <div class="page-header"><div><h1 class="page-title">Bonificación por Asistencia</h1><p class="page-sub">Ordinario (${fmt(ajustes.bonifOrdinario)}) / Discontinuo (${fmt(ajustes.bonifDiscontinuo)}) por temporada, proporcional a días trabajados</p></div><button class="btn btn-p" onclick="openModal('bonifModal')">+ Nueva</button></div>
             <div class="filter-bar"><select class="form-select" id="bonFYear" onchange="renderBonificaciones()"><option value="">Todos</option>${yearOpts}</select></div>
-            <div class="card"><div class="card-body"><table><thead><tr><th>Año</th><th>Temporada</th><th>Empleado</th><th>Días trabajados</th><th>Días temporada</th><th>Faltas</th><th>Importe</th><th>Estado</th><th></th></tr></thead><tbody id="bonTb"></tbody></table></div></div>`,
+            <div class="card"><div class="card-body"><table><thead><tr><th>Año</th><th>Temporada</th><th>Empleado</th><th>Tipo</th><th>Días trab.</th><th>Días temp.</th><th>Faltas</th><th>Importe</th><th>Estado</th><th></th></tr></thead><tbody id="bonTb"></tbody></table></div></div>`,
 
         empleados:`
             <div class="page-header"><div><h1 class="page-title">Empleados</h1></div><button class="btn btn-p" onclick="openModal('empModal')">+ Nuevo</button></div>
@@ -373,7 +381,17 @@ function renderPage(page){
 
         exportar:`
             <div class="page-header"><div><h1 class="page-title">Exportar</h1><p class="page-sub">Genera Excel para gestoría</p></div></div>
-            <div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="expMes"><option value="">Todos</option>${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="expYear">${yearOpts}</select></div></div><button class="btn btn-p" onclick="exportExcel()">📥 Descargar Excel</button></div></div>`
+            <div class="card"><div class="card-body"><div class="form-row"><div class="form-group"><label>Mes</label><select class="form-select" id="expMes"><option value="">Todos</option>${mesOpts}</select></div><div class="form-group"><label>Año</label><select class="form-select" id="expYear">${yearOpts}</select></div></div><button class="btn btn-p" onclick="exportExcel()">📥 Descargar Excel</button></div></div>`,
+
+        ajustesPage:`
+            <div class="page-header"><div><h1 class="page-title">Ajustes</h1><p class="page-sub">Configuración general de la aplicación</p></div></div>
+            <div class="card"><div class="card-header"><h2 class="card-title">Bonificación por Asistencia</h2></div><div class="card-body">
+            <form onsubmit="saveAjustesForm(event)">
+            <p style="color:var(--txt2);margin-bottom:16px">Configura el importe base por temporada (6 meses) para cada tipo de contrato</p>
+            <div class="form-row"><div class="form-group"><label>Fijo Ordinario (€/temporada)</label><input type="number" class="form-input" id="ajBonifOrdinario" value="${ajustes.bonifOrdinario}" step="0.01" min="0" required><small style="color:var(--txt2)">Para contratos indefinidos</small></div>
+            <div class="form-group"><label>Fijo Discontinuo (€/temporada)</label><input type="number" class="form-input" id="ajBonifDiscontinuo" value="${ajustes.bonifDiscontinuo}" step="0.01" min="0" required><small style="color:var(--txt2)">Para contratos fijos discontinuos</small></div></div>
+            <button type="submit" class="btn btn-p">Guardar ajustes</button>
+            </form></div></div>`
     };
 
     m.innerHTML=pages[page]||'<p>Página no encontrada</p>';
@@ -390,6 +408,31 @@ function renderPage(page){
     if(page==='tiendas')renderTiendas();
     if(page==='objetivosPage')renderObjetivosPage();
     if(page==='exportar'){$('expMes').value=now.getMonth()+1;$('expYear').value=now.getFullYear()}
+}
+
+function saveAjustesForm(e){
+    e.preventDefault();
+    ajustes.bonifOrdinario=+$('ajBonifOrdinario').value;
+    ajustes.bonifDiscontinuo=+$('ajBonifDiscontinuo').value;
+    saveAjustes();
+    toast('Ajustes guardados','ok');
+}
+
+function updateBonifInfo(){
+    const tipo=$('mETipo')?.value,info=$('mEBonifInfo');
+    if(!info)return;
+    if(tipo==='indefinido')info.textContent='Fijo ordinario: '+fmt(ajustes.bonifOrdinario)+'/temporada';
+    else if(tipo==='fija_discontinua')info.textContent='Fijo discontinuo: '+fmt(ajustes.bonifDiscontinuo)+'/temporada';
+    else info.textContent='No aplica para contratos temporales';
+}
+
+function autoSetBonif(){
+    const tipo=$('mETipo')?.value,bonifSel=$('mEBonif');
+    if(bonifSel){
+        if(tipo==='indefinido'||tipo==='fija_discontinua')bonifSel.value='si';
+        else bonifSel.value='no';
+    }
+    updateBonifInfo();
 }
 
 // === DASHBOARD ===
@@ -512,7 +555,7 @@ function renderEmpleados(){
     $('empTb').innerHTML=empleados.length?empleados.map(e=>{
         const t=tiendas.find(x=>x.id===e.tiendaId);
         const tipoLabel={'indefinido':'Indef.','fija_discontinua':'Fija disc.','temporal':'Temporal'};
-        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td>${e.pctAnual||0}%</td><td>${tipoLabel[e.tipoContrato]||'Indef.'}</td><td>${e.bonifAsistencia==='si'?'<span class="badge badge-ok">Sí</span>':'—'}</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
+        return `<tr><td><b>${e.nombre}</b></td><td>${t?.nombre||'-'}</td><td>${e.obj1}%</td><td>${e.obj2}%</td><td>${e.pctAnual||0}%</td><td>${tipoLabel[e.tipoContrato]||'Indef.'}</td><td>${e.bonifAsistencia==='si'?(e.tipoContrato==='fija_discontinua'?'<span class="badge badge-ok">Disc.</span>':'<span class="badge badge-ok">Ord.</span>'):'—'}</td><td><span class="badge ${e.estado==='activo'?'badge-ok':'badge-err'}">${e.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editEmp('${e.id}')">✏️</button><button class="act-btn del" onclick="delEmp('${e.id}')">🗑️</button></div></td></tr>`;
     }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin empleados</h3><p>Añade empleados para registrar incidencias</p></td></tr>';
 }
 
@@ -579,9 +622,9 @@ function openModal(type,data={}){
             <div class="form-row"><div class="form-group"><label>% Comisión Obj.1</label><input type="number" class="form-input" id="mEObj1" value="${data.obj1||0.2}" step="0.001" required><small style="color:var(--txt2)">Se aplica siempre</small></div>
             <div class="form-group"><label>% Comisión Obj.2</label><input type="number" class="form-input" id="mEObj2" value="${data.obj2||0.25}" step="0.001" required><small style="color:var(--txt2)">Solo si alcanza objetivo</small></div></div>
             <div class="form-row"><div class="form-group"><label>% Comisión Anual</label><input type="number" class="form-input" id="mEAnual" value="${data.pctAnual||0}" step="0.001" required><small style="color:var(--txt2)">Sobre ventas anuales</small></div>
-            <div class="form-group"><label>Tipo contrato</label><select class="form-select" id="mETipo"><option value="indefinido"${data.tipoContrato==='indefinido'||!data.tipoContrato?' selected':''}>Indefinido</option><option value="fija_discontinua"${data.tipoContrato==='fija_discontinua'?' selected':''}>Fija discontinua</option><option value="temporal"${data.tipoContrato==='temporal'?' selected':''}>Temporal</option></select></div></div>
+            <div class="form-group"><label>Tipo contrato</label><select class="form-select" id="mETipo" onchange="autoSetBonif()"><option value="indefinido"${data.tipoContrato==='indefinido'||!data.tipoContrato?' selected':''}>Indefinido</option><option value="fija_discontinua"${data.tipoContrato==='fija_discontinua'?' selected':''}>Fija discontinua</option><option value="temporal"${data.tipoContrato==='temporal'?' selected':''}>Temporal</option></select></div></div>
             <div class="form-row"><div class="form-group"><label>Estado</label><select class="form-select" id="mEEstado"><option value="activo"${data.estado==='activo'?' selected':''}>Activo</option><option value="baja"${data.estado==='baja'?' selected':''}>Baja</option></select></div>
-            <div class="form-group"><label>Bonif. asistencia</label><select class="form-select" id="mEBonif"><option value="no"${data.bonifAsistencia!=='si'?' selected':''}>No aplica</option><option value="si"${data.bonifAsistencia==='si'?' selected':''}>Sí (450€/temporada)</option></select><small style="color:var(--txt2)">Solo fijas discontinuas</small></div></div>
+            <div class="form-group"><label>Bonif. asistencia</label><select class="form-select" id="mEBonif"><option value="no"${data.bonifAsistencia!=='si'?' selected':''}>No aplica</option><option value="si"${data.bonifAsistencia==='si'?' selected':''}>Sí</option></select><small id="mEBonifInfo" style="color:var(--txt2)"></small></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
 
         comisionModal:`<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Comisión</h3><button class="modal-close" onclick="closeModal()">×</button></div>
@@ -630,14 +673,14 @@ function openModal(type,data={}){
             <div class="form-group"><label>Motivo</label><input class="form-input" id="mHMotivo" value="${data.motivo||''}" required></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`,
 
-        bonifModal:(()=>{const bEmpOpts=empleados.filter(e=>e.estado==='activo'&&e.bonifAsistencia==='si').map(e=>`<option value="${e.id}"${data.empId===e.id?' selected':''}>${e.nombre}</option>`).join('');return `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Bonificación Asistencia</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+        bonifModal:(()=>{const bEmpOpts=empleados.filter(e=>e.estado==='activo'&&e.bonifAsistencia==='si').map(e=>`<option value="${e.id}"${data.empId===e.id?' selected':''}>${e.nombre} (${e.tipoContrato==='fija_discontinua'?'Disc.':'Ord.'})</option>`).join('');return `<div class="modal-header"><h3 class="modal-title">${data.id?'Editar':'Nueva'} Bonificación Asistencia</h3><button class="modal-close" onclick="closeModal()">×</button></div>
             <form onsubmit="saveBonif(event,'${data.id||''}')"><div class="modal-body">
             <div class="form-row"><div class="form-group"><label>Año</label><select class="form-select" id="mBYear">${yearOpts}</select></div><div class="form-group"><label>Temporada</label><select class="form-select" id="mBTemp"><option value="verano"${data.temporada==='verano'||!data.temporada?' selected':''}>Verano (abr-sep)</option><option value="invierno"${data.temporada==='invierno'?' selected':''}>Invierno (oct-mar)</option></select></div></div>
-            <div class="form-group"><label>Empleado (fija discontinua)</label><select class="form-select" id="mBEmp" required>${bEmpOpts||'<option value="">— Sin empleados con bonif. —</option>'}</select></div>
+            <div class="form-group"><label>Empleado</label><select class="form-select" id="mBEmp" required onchange="calcBonif()">${bEmpOpts||'<option value="">— Sin empleados con bonif. —</option>'}</select></div>
             <div class="form-row"><div class="form-group"><label>Días trabajados</label><input type="number" class="form-input" id="mBDias" value="${data.diasTrabajados||0}" min="0" required oninput="calcBonif()"></div><div class="form-group"><label>Días temporada (total)</label><input type="number" class="form-input" id="mBDiasTemp" value="${data.diasTemporada||182}" min="1" required oninput="calcBonif()"></div></div>
             <div class="form-group"><label>Faltas (días no trabajados sin justificar)</label><input type="number" class="form-input" id="mBFaltas" value="${data.faltas||0}" min="0" oninput="calcBonif()"></div>
             <div class="form-group"><label>Estado</label><select class="form-select" id="mBEstado"><option value="pendiente"${data.estado==='pendiente'||!data.estado?' selected':''}>Pendiente</option><option value="pagado"${data.estado==='pagado'?' selected':''}>Pagado</option></select></div>
-            <div class="calc-box"><div class="calc-row"><span class="calc-label">Base temporada:</span><span class="calc-val">450€</span></div><div class="calc-row"><span class="calc-label">Proporcional (días):</span><span class="calc-val" id="mBCalc">0€</span></div><div class="calc-row"><span class="calc-label">Faltas descuento:</span><span class="calc-val" id="mBDescCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mBTotCalc">0€</span></div></div>
+            <div class="calc-box"><div class="calc-row"><span class="calc-label">Base temporada:</span><span class="calc-val" id="mBBaseCalc">0€</span></div><div class="calc-row"><span class="calc-label">Proporcional (días):</span><span class="calc-val" id="mBCalc">0€</span></div><div class="calc-row"><span class="calc-label">Faltas descuento:</span><span class="calc-val" id="mBDescCalc">0€</span></div><div class="calc-row"><span class="calc-label">Total:</span><span class="calc-val hi" id="mBTotCalc">0€</span></div></div>
             </div><div class="modal-footer"><button type="button" class="btn btn-s" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-p">Guardar</button></div></form>`;})()
     };
 
@@ -648,6 +691,7 @@ function openModal(type,data={}){
     if(type==='comisionModal')setTimeout(calcCom,0);
     if(type==='dietaModal')setTimeout(calcDiet,0);
     if(type==='bonifModal')setTimeout(calcBonif,0);
+    if(type==='empModal'){const isNew=!data.id;setTimeout(()=>{if(isNew)autoSetBonif();else updateBonifInfo()},0)}
 }
 function closeModal(){document.querySelector('.modal-bg')?.classList.remove('active')}
 
@@ -676,11 +720,19 @@ function calcDiet(){
     $('mDTotCalc').textContent=fmt(importe+inc);
 }
 
+function getBonifBase(empId){
+    const emp=empleados.find(e=>e.id===empId);
+    return emp&&emp.tipoContrato==='fija_discontinua'?ajustes.bonifDiscontinuo:ajustes.bonifOrdinario;
+}
+
 function calcBonif(){
+    const empId=$('mBEmp')?.value;
+    const base=getBonifBase(empId);
     const dias=+($('mBDias')?.value||0),diasTemp=+($('mBDiasTemp')?.value||182),faltas=+($('mBFaltas')?.value||0);
-    const proporcional=diasTemp>0?Math.round((450*dias/diasTemp)*100)/100:0;
-    const descuento=diasTemp>0?Math.round((450*faltas/diasTemp)*100)/100:0;
+    const proporcional=diasTemp>0?Math.round((base*dias/diasTemp)*100)/100:0;
+    const descuento=diasTemp>0?Math.round((base*faltas/diasTemp)*100)/100:0;
     const total=Math.max(0,proporcional-descuento);
+    if($('mBBaseCalc'))$('mBBaseCalc').textContent=fmt(base);
     $('mBCalc').textContent=fmt(proporcional);
     $('mBDescCalc').textContent=fmt(descuento);
     $('mBTotCalc').textContent=fmt(total);
@@ -724,8 +776,9 @@ function renderBonificaciones(){
     if(fYear)f=f.filter(b=>b.year==fYear);
     $('bonTb').innerHTML=f.length?f.map(b=>{
         const e=empleados.find(x=>x.id===b.empId);
-        return `<tr><td>${b.year}</td><td>${b.temporada==='verano'?'Verano (abr-sep)':'Invierno (oct-mar)'}</td><td><b>${e?.nombre||'-'}</b></td><td>${b.diasTrabajados}</td><td>${b.diasTemporada}</td><td>${b.faltas||0}</td><td><b style="color:var(--ok)">${fmt(b.importe)}</b></td><td><span class="badge click ${b.estado==='pagado'?'badge-ok':'badge-warn'}" onclick="cycleBonifEstado('${b.id}')">${b.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editBonif('${b.id}')">✏️</button><button class="act-btn del" onclick="delBonif('${b.id}')">🗑️</button></div></td></tr>`;
-    }).join(''):'<tr><td colspan="9" class="empty"><h3>Sin registros</h3><p>Añade bonificaciones para empleadas fijas discontinuas</p></td></tr>';
+        const tipoB=e?.tipoContrato==='fija_discontinua'?'Disc.':'Ord.';
+        return `<tr><td>${b.year}</td><td>${b.temporada==='verano'?'Verano (abr-sep)':'Invierno (oct-mar)'}</td><td><b>${e?.nombre||'-'}</b></td><td><span class="badge ${e?.tipoContrato==='fija_discontinua'?'badge-info':'badge-warn'}">${tipoB}</span></td><td>${b.diasTrabajados}</td><td>${b.diasTemporada}</td><td>${b.faltas||0}</td><td><b style="color:var(--ok)">${fmt(b.importe)}</b></td><td><span class="badge click ${b.estado==='pagado'?'badge-ok':'badge-warn'}" onclick="cycleBonifEstado('${b.id}')">${b.estado}</span></td><td><div class="actions"><button class="act-btn" onclick="editBonif('${b.id}')">✏️</button><button class="act-btn del" onclick="delBonif('${b.id}')">🗑️</button></div></td></tr>`;
+    }).join(''):'<tr><td colspan="10" class="empty"><h3>Sin registros</h3><p>Añade bonificaciones para empleados con bonificación por asistencia</p></td></tr>';
 }
 
 function cycleBonifEstado(id){
@@ -811,11 +864,13 @@ function saveHExtra(e,id){
 
 function saveBonif(e,id){
     e.preventDefault();
+    const empId=$('mBEmp').value;
+    const base=getBonifBase(empId);
     const dias=+$('mBDias').value,diasTemp=+$('mBDiasTemp').value,faltas=+$('mBFaltas').value;
-    const proporcional=diasTemp>0?Math.round((450*dias/diasTemp)*100)/100:0;
-    const descuento=diasTemp>0?Math.round((450*faltas/diasTemp)*100)/100:0;
+    const proporcional=diasTemp>0?Math.round((base*dias/diasTemp)*100)/100:0;
+    const descuento=diasTemp>0?Math.round((base*faltas/diasTemp)*100)/100:0;
     const importe=Math.max(0,proporcional-descuento);
-    const data={id:id||uid(),year:+$('mBYear').value,temporada:$('mBTemp').value,empId:$('mBEmp').value,diasTrabajados:dias,diasTemporada:diasTemp,faltas,importe,estado:$('mBEstado').value};
+    const data={id:id||uid(),year:+$('mBYear').value,temporada:$('mBTemp').value,empId,diasTrabajados:dias,diasTemporada:diasTemp,faltas,importe,estado:$('mBEstado').value};
     if(id){const idx=bonificaciones.findIndex(x=>x.id===id);bonificaciones[idx]=data}else bonificaciones.push(data);
     saveDoc('bonificaciones',data);closeModal();renderBonificaciones();toast('Bonificación guardada','ok');
 }
@@ -898,7 +953,7 @@ function exportExcel(){
 
     const bF=bonificaciones.filter(b=>b.year==year);
     if(bF.length){
-        const data=bF.map(b=>({Año:b.year,Temporada:b.temporada,Empleado:empleados.find(e=>e.id===b.empId)?.nombre,DíasTrabajados:b.diasTrabajados,DíasTemporada:b.diasTemporada,Faltas:b.faltas,Importe:b.importe,Estado:b.estado}));
+        const data=bF.map(b=>{const emp=empleados.find(e=>e.id===b.empId);return {Año:b.year,Temporada:b.temporada,Empleado:emp?.nombre,Tipo:emp?.tipoContrato==='fija_discontinua'?'Fijo discontinuo':'Fijo ordinario',DíasTrabajados:b.diasTrabajados,DíasTemporada:b.diasTemporada,Faltas:b.faltas,Importe:b.importe,Estado:b.estado}});
         XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Bonificaciones');
     }
     if(!wb.SheetNames.length){toast('No hay datos para este periodo','err');return}
